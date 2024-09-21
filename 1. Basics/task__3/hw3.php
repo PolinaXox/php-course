@@ -1,7 +1,7 @@
-
 <?php
-date_default_timezone_set("Europe/Kyiv");
+date_default_timezone_set("Europe/Kyiv");       // real time, також змінено в php.ini
 
+// read from console
 function readHttpLikeInput() {
     $f = fopen( 'php://stdin', 'r' );
     $store = "";
@@ -18,28 +18,19 @@ function readHttpLikeInput() {
     return $store;
 }
 
-//$contents = readHttpLikeInput();
+$contents = readHttpLikeInput();
 
-$contents = "GET /sum?nums=1,2,3 HTTP/1.1\nHost: student.shpp.me\n\n";
-
-// for age-cases testing
-//$contents = "GET /doc/test.html HTTP/1.1\n" 
-//."Host: www.test101.com\nAccept: image/gif, image/jpeg, */*\nAccept-Language: en-us\n"
-//."Accept-Encoding: gzip, deflate\nUser-Agent: Mozilla/4.0\nContent-Length: 35\n"
-//."\nbookId=12345&author=Tan+Ah+Teck";
-
+// output the response
 function outputHttpResponse($statuscode, $statusmessage, $headers, $body) {
-    
     echo "HTTP/1.1 $statuscode $statusmessage\n"; 
-    foreach($headers as $header => $value){
+    foreach($headers as $header => $value){         // for associative arr, not for matrix
         echo "$header : $value\n";
     }
-    echo "\n$body\n";
-   
+    echo "\n$body\n"; 
 }
 
+// make the response
 function processHttpRequest($method, $uri, $headers=null, $body=null) {
-    // first HTTP/1.1 
     $statuscode = getStatusCode($method, $uri);
     $statusmessage = getStatusMessage($statuscode); // залежить від статусКод
     $body = getBody($statuscode, $uri);
@@ -55,22 +46,24 @@ function processHttpRequest($method, $uri, $headers=null, $body=null) {
     outputHttpResponse($statuscode, $statusmessage, $headers, $body);
 }
 
+// parsing the request
 function parseTcpStringAsHttpRequest($string) {
     $strAsArr = explode("\n", $string);
     $methodAndURI = explode(" ", array_shift($strAsArr));
+    $headers = array();
+    $body = NULL;
     if($strAsArr){
         $headers = array();
         $i = 0;
         while($strAsArr[$i]){
             $ind = strpos($strAsArr[$i], ":");
-            // assiciative array
             $headers[trim(substr($strAsArr[$i], 0, $ind))] = trim(substr($strAsArr[$i], $ind+1));
-            // matrix
-            #array_push($headers, [trim(substr($strAsArr[$i], 0, $ind)), trim(substr($strAsArr[$i], $ind+1))]);
             $i++;
         }
         $i++;
-        $body = trim($strAsArr[$i]);
+        if($i < count($strAsArr)){
+            $body = trim($strAsArr[$i]);
+        }
     }
     return array(
         "method" => trim($methodAndURI[0]),
@@ -84,18 +77,22 @@ $http = parseTcpStringAsHttpRequest($contents);
 processHttpRequest($http["method"], $http["uri"], $http["headers"], $http["body"]);
 
 ///////////////////////////////////////////////////////////////////////////////////////////
+// MY FUNCTIONS
+// condition combination as a table in "condition_combinations of method and uri.xlsx"
+// (i don't like the realization...)
 function getStatusCode($method, $uri) : int {
     if($method != "GET" || !preg_match('/\?nums=/i', $uri)) {
         return 400;
     }
     
-    if(preg_match('#^/sum\?nums=[\d,]+#i', $uri)) { 
+    if(preg_match('#^/sum\?nums=[\d,]+#i', $uri)) {     // integers only??? 
         return 200;
     }
 
     return 404;
 }
 
+// request code -> request string
 function getStatusMessage($statusCode){
     return match($statusCode) {
         200 => "OK",
@@ -105,12 +102,13 @@ function getStatusMessage($statusCode){
     };
 }
 
+// form body: string or sum
 function getBody($statusCode, $uri) : string {
-    if($statusCode != 200) {
+    if($statusCode != 200) {                                // not OK
         return strtolower(getStatusMessage($statusCode));
     }
-    
+    // OK
     $ind = strpos($uri, "=");
-    $numsArr = explode(",", substr($uri, $ind+1));
+    $numsArr = explode(",", substr($uri, $ind+1));  // "/sum?nums=1,2,3" -> "1,2,3" -> [1, 2, 3]
     return array_sum($numsArr);
 }

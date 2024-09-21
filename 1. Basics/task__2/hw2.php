@@ -1,11 +1,8 @@
 <?php
-// Запитання:
-// HTTP/1.1 ? не рахується?
-// чи потрібно передавати порожні рядки, якщо якась частина URI відсутня? 
-
-
 // не звертайте на цю функцію уваги
 // вона потрібна для того щоб правильно зчитати вхідні дані
+
+// read from console
 function readHttpLikeInput() {
     $f = fopen( 'php://stdin', 'r' );
     $store = "";
@@ -24,29 +21,27 @@ function readHttpLikeInput() {
 
 $contents = readHttpLikeInput();
 
-// for age-cases testing
-//$contents = "GET /doc/test.html HTTP/1.1\n" 
-//."Host: www.test101.com\nAccept: image/gif, image/jpeg, */*\nAccept-Language: en-us\n"
-//."Accept-Encoding: gzip, deflate\nUser-Agent: Mozilla/4.0\nContent-Length: 35\n";
-//."\nbookId=12345&author=Tan+Ah+Teck";
-
-
+// parsing 
 function parseTcpStringAsHttpRequest($string) {
     $strAsArr = explode("\n", $string);
     $methodAndURI = explode(" ", array_shift($strAsArr));
+    
+    $headers = array();
+    $body = NULL;
     if($strAsArr){
-        $headers = array();
         $i = 0;
         while($strAsArr[$i]){
             $ind = strpos($strAsArr[$i], ":");
 			// асоціативний масив, як у завданні
-            #$headers[trim(substr($strAsArr[$i], 0, $ind))] = trim(substr($strAsArr[$i], $ind+1));
+            $headers[trim(substr($strAsArr[$i], 0, $ind))] = trim(substr($strAsArr[$i], $ind+1));
             // масив масивів, як у тестирі домашок
-			array_push($headers, [trim(substr($strAsArr[$i], 0, $ind)), trim(substr($strAsArr[$i], $ind+1))]);
+			//array_push($headers, [trim(substr($strAsArr[$i], 0, $ind)), trim(substr($strAsArr[$i], $ind+1))]);
             $i++;
         }
-        $i++;
-        $body = trim($strAsArr[$i]);
+        $i++;                               // empyty line between header(s) and body, if it is
+        if($i < count($strAsArr)){          // if smth exist, so it's the body... (or an_empty_line)
+            $body = trim($strAsArr[$i]);
+        }
     }
     return array(
         "method" => trim($methodAndURI[0]),
