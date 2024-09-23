@@ -1,48 +1,64 @@
 <?php
-// не звертайте на цю функцію уваги
-// вона потрібна для того щоб правильно зчитати вхідні дані
-
-// read from console
-function readHttpLikeInput() {
+/**
+ * @return string the input request example as a string
+ */
+function readHttpLikeInput() : string {
     $f = fopen( 'php://stdin', 'r' );
     $store = "";
     $toread = 0;
     while( $line = fgets( $f ) ) {
         $store .= preg_replace("/\r/", "", $line);
-        if (preg_match('/Content-Length: (\d+)/',$line,$m)) 
-            $toread=$m[1]*1; 
+
+        // store a request body length if the body exsist
+        // $m - array of matches
+        // $m[1] <- (\d+); $m[1]*1 - (str->int) - the length of the body
+        if (preg_match('/Content-Length: (\d+)/',$line,$m)) {
+            $toread=$m[1]*1;
+        }
+
         if ($line == "\r\n") 
               break;
     }
+
+    // if the request has a body, read and store it
     if ($toread > 0) 
         $store .= fread($f, $toread);
+    
     return $store;
 }
 
 $contents = readHttpLikeInput();
 
-// parsing 
-function parseTcpStringAsHttpRequest($string) {
+/**
+ * @param string $string : input request sample as a string
+ *
+ * @return array of the needed request parts
+ */
+function parseTcpStringAsHttpRequest($string) : array {
     $strAsArr = explode("\n", $string);
     $methodAndURI = explode(" ", array_shift($strAsArr));
-    
-    $headers = array();
+    $headers = [];
     $body = NULL;
-    if($strAsArr){
+
+    // if the request has headers store each header data as
+    // $headers[headerName] = headerValue
+    if($strAsArr) {
         $i = 0;
-        while($strAsArr[$i]){
+        while($strAsArr[$i]) {
             $ind = strpos($strAsArr[$i], ":");
-			// асоціативний масив, як у завданні
             $headers[trim(substr($strAsArr[$i], 0, $ind))] = trim(substr($strAsArr[$i], $ind+1));
-            // масив масивів, як у тестирі домашок
-			//array_push($headers, [trim(substr($strAsArr[$i], 0, $ind)), trim(substr($strAsArr[$i], $ind+1))]);
             $i++;
         }
-        $i++;                               // empyty line between header(s) and body, if it is
-        if($i < count($strAsArr)){          // if smth exist, so it's the body... (or an_empty_line)
+
+        // empyty line between header(s) and body, if it is
+        $i++;
+        
+        // if the request has a body
+        if($i < count($strAsArr)) {          
             $body = trim($strAsArr[$i]);
         }
     }
+
     return array(
         "method" => trim($methodAndURI[0]),
         "uri" => trim($methodAndURI[1]),
