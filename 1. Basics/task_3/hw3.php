@@ -1,8 +1,10 @@
 <?php
-date_default_timezone_set("Europe/Kyiv");       // real time, також змінено в php.ini
+date_default_timezone_set("Europe/Kyiv");
 
-// read from console
-function readHttpLikeInput() {
+/**
+ * @return string : input request sample as a string 
+ */
+function readHttpLikeInput() : string {
     $f = fopen( 'php://stdin', 'r' );
     $store = "";
     $toread = 0;
@@ -20,51 +22,70 @@ function readHttpLikeInput() {
 
 $contents = readHttpLikeInput();
 
-// output the response
-function outputHttpResponse($statuscode, $statusmessage, $headers, $body) {
-    echo "HTTP/1.1 $statuscode $statusmessage\n"; 
-    foreach($headers as $header => $value){         // for associative arr, not for matrix
+/**
+ * @param int       $statuscode
+ * @param string    $statusmessage
+ * @param array     $headers
+ * @param string    $body
+ */
+function outputHttpResponse($statuscode, $statusmessage, $headers, $body) : void {
+    echo "HTTP/1.1 $statuscode $statusmessage\n";
+
+    foreach($headers as $header => $value) {         
         echo "$header : $value\n";
     }
+
     echo "\n$body\n"; 
 }
 
-// make the response
-function processHttpRequest($method, $uri, $headers=null, $body=null) {
-    $statuscode = getStatusCode($method, $uri);
-    $statusmessage = getStatusMessage($statuscode); // залежить від статусКод
-    $body = getBody($statuscode, $uri);
-
+/**
+ * @param string    $method
+ * @param string    $uri
+ * @param array     $headers
+ * @param string    $body
+ */
+function processHttpRequest($method, $uri, $headers=null, $body=null) : void {
+    $statuscode = getResponseStatusCode($method, $uri);
+    $statusmessage = getResponseStatusMessage($statuscode); 
+    $body = getResponseBody($statuscode, $uri);
     $headers = array(
-        "Date" => date(DATE_RFC1123),                       // the most common format      
-        "Server" => "Apache/2.2.14 (Win32)",                // just simular constant string, real result: apache_get_version()???
-        "Content-Length" => strlen($body), 
-        "Connection" => "Closed",                           // just simular constant string
-        "Content-Type" => "text/html; charset=utf-8",       // just simular constant string
+        "Date" => date(DATE_RFC1123),                 
+        "Server" => "Apache/2.2.14 (Win32)",
+        "Content-Length" => strlen($body),
+        "Connection" => "Closed",      
+        "Content-Type" => "text/html; charset=utf-8",
     );
    
     outputHttpResponse($statuscode, $statusmessage, $headers, $body);
 }
 
-// parsing the request
+/**
+* @param string    $string : input request as a string
+*
+* @return array : the needed request parts as an array
+*/
 function parseTcpStringAsHttpRequest($string) {
     $strAsArr = explode("\n", $string);
     $methodAndURI = explode(" ", array_shift($strAsArr));
-    $headers = array();
+    $headers = [];
     $body = NULL;
-    if($strAsArr){
-        $headers = array();
+
+    if($strAsArr) {
         $i = 0;
-        while($strAsArr[$i]){
+
+        while($strAsArr[$i]) {
             $ind = strpos($strAsArr[$i], ":");
             $headers[trim(substr($strAsArr[$i], 0, $ind))] = trim(substr($strAsArr[$i], $ind+1));
             $i++;
         }
+
         $i++;
-        if($i < count($strAsArr)){
+        
+        if($i < count($strAsArr)) {
             $body = trim($strAsArr[$i]);
         }
     }
+
     return array(
         "method" => trim($methodAndURI[0]),
         "uri" => trim($methodAndURI[1]),
@@ -76,11 +97,15 @@ function parseTcpStringAsHttpRequest($string) {
 $http = parseTcpStringAsHttpRequest($contents);
 processHttpRequest($http["method"], $http["uri"], $http["headers"], $http["body"]);
 
-///////////////////////////////////////////////////////////////////////////////////////////
-// MY FUNCTIONS
+/**
+ * @param string    $method
+ * @param string    $uri
+ * 
+ * @return int  status code
+ */
+
 // condition combination as a table in "condition_combinations of method and uri.xlsx"
-// (i don't like the realization...)
-function getStatusCode($method, $uri) : int {
+function getResponseStatusCode($method, $uri) : int {
     if($method != "GET" || !preg_match('/\?nums=/i', $uri)) {
         return 400;
     }
@@ -92,8 +117,12 @@ function getStatusCode($method, $uri) : int {
     return 404;
 }
 
-// request code -> request string
-function getStatusMessage($statusCode){
+/**
+ * @param int $statusCode
+ * 
+ * @return string string message
+ */
+function getResponseStatusMessage($statusCode) : string {
     return match($statusCode) {
         200 => "OK",
         400 => "Bad Request",
@@ -102,13 +131,23 @@ function getStatusMessage($statusCode){
     };
 }
 
-// form body: string or sum
-function getBody($statusCode, $uri) : string {
-    if($statusCode != 200) {                                // not OK
-        return strtolower(getStatusMessage($statusCode));
+/**
+ * @param int       $statusCode
+ * @param string    $uri
+ * 
+ * @return string   response body
+ */
+function getResponseBody($statusCode, $uri) : string {
+
+    // not OK
+    if($statusCode != 200) {                                
+        return strtolower(getResponseStatusMessage($statusCode));
     }
+
     // OK
+    // "/sum?nums=1,2,3" -> "1,2,3" -> [1, 2, 3]
     $ind = strpos($uri, "=");
-    $numsArr = explode(",", substr($uri, $ind+1));  // "/sum?nums=1,2,3" -> "1,2,3" -> [1, 2, 3]
+    $numsArr = explode(",", substr($uri, $ind+1));  
+    
     return array_sum($numsArr);
 }
