@@ -1,5 +1,10 @@
 <?php
+
+// constant for file!!!!!!!
+// constant arr for color, status, message !!!!!!!!!
+
 date_default_timezone_set("Europe/Kyiv");       // real time, також змінено в php.ini
+
 
 /**
  * Returns the input request example as a string
@@ -13,7 +18,7 @@ function readHttpLikeInput() : string {
     $toread = 0;
    
     while( $line = fgets( $f ) ) {
-        $store .= preg_replace("/\r/", "", $line);
+        $store .= $line; //preg_replace("/\r/", "", $line);
         
         if (preg_match('/Content-Length: (\d+)/',$line,$m))
             $toread=$m[1]*1; 
@@ -53,7 +58,7 @@ function outputHttpResponse($statuscode, $statusmessage, $headers, $body) : void
  * @param string    $method
  * @param string    $uri
  * @param array     $headers
- * @param string    $body
+ * @param array    $body
  */
 /*
  function processHttpRequest($method, $uri, $headers=null, $body=null) : void {
@@ -72,19 +77,19 @@ function outputHttpResponse($statuscode, $statusmessage, $headers, $body) : void
 }
 */
 function processHttpRequest($method, $uri, $headers, $body) : void {
-    $statuscode = getStatusCode($method, $uri, $headers["Content-Type"]);
-    $statusmessage = getStatusMessage($statuscode);
-    $body = getBody($statuscode, $body);
+    $statuscode = getResponseStatusCode($method, $uri, $headers["Content-Type"], $body);
+    $statusmessage = getResponseStatusMessage($statuscode);
+    $responseBody = ""; //getBody($statuscode, $body);
 
     $headers = [
-        "Date" => date(DATE_RFC1123),                       // the most common format      
-        "Server" => "Apache/2.2.14 (Win32)",                // just simular constant string, real result: apache_get_version()???
-        "Content-Length" => strlen($body), 
-        "Connection" => "Closed",                           // just simular constant string
-        "Content-Type" => "text/html; charset=utf-8",       // just simular constant string
+        "Date" => date(DATE_RFC1123),                           
+        "Server" => "Apache/2.2.14 (Win32)",                
+        "Content-Length" => strlen($responseBody), 
+        "Connection" => "Closed",          
+        "Content-Type" => "text/html; charset=utf-8",       
     ];
    
-    outputHttpResponse($statuscode, $statusmessage, $headers, $body);
+    outputHttpResponse($statuscode, $statusmessage, $headers, $responseBody);
 }
 
 /**
@@ -129,7 +134,7 @@ function parseTcpStringAsHttpRequest($string) : array {
         "method" => trim($methodAndURI[0]),
         "uri" => trim($methodAndURI[1]),
         "headers" => $headers,
-        "body" => $body,
+        "body" => getRequestBodyAsArray($body),
     );
 }
 
@@ -190,38 +195,39 @@ function hasBody($string, $arrLastItem) : bool {
 
 
 /**
+ * Analyzes request anr return status code for response
+ * 
  * @param string    $method
  * @param string    $uri
+ * @param string    $contentType
+ * @param string    $body
  * 
- * @return int  status code
+ * @return int
  */
-/*
- // condition combinations as a table in "condition_combinations of method and uri.xlsx"
- function getResponseStatusCode($method, $uri) : int {
-    if($method != "GET" || !preg_match('/\?nums=/i', $uri)) {
-        return 400;
-    }
+function getResponseStatusCode($method, $uri, $contentType, $body) : int {
     
-    if(preg_match('#^/sum\?nums=[\d,]+#i', $uri)) { 
-        return 200;
-    }
+    // 400 : Bad Request
+    // 400 : invalid method
+    if($method != "POST") return 400;
 
-    return 404;
-}
-*/
-function getStatusCode($method, $uri, $contentType) : int {
-    // invalid method or Content-Type
-    if($method != "POST" && $contentType != "application/x-www-form-urlencoded" ) {
-        return 400;
-    }
-    // invalid uri
-    if($uri != "/api/checkLoginAndPassword") {
-        return 404;
-    }
-    // file is NOT exist
-   if(!file_exists("passwords.txt")) {
-        return 500;
-    }
+    // 400 : invalid "Content-type" header
+    if($contentType != "application/x-www-form-urlencoded" ) return 400;
+
+    // 400 : invalid body
+    if(!isRequestBodyValid($body)) return 400;
+
+    // 404 : Not Found
+    // 404 : invalid uri
+    if($uri != "/api/checkLoginAndPassword") return 404;
+    
+    // 500 : Internal Server Error
+    // 500 : file not exist
+    if(!file_exists("passwords.txt")) return 500;
+
+    // 404 : Not Found
+    // 404 : login or/and password not found
+    //if(isLoginPasswordPairValid($body))
+
 
     return 200;
 }
@@ -232,17 +238,7 @@ function getStatusCode($method, $uri, $contentType) : int {
  * 
  * @return string
  */
-/*
 function getResponseStatusMessage($statusCode) : string {
-    return match($statusCode) {
-        200 => "OK",
-        400 => "Bad Request",
-        404 => "Not Found",
-        default => "Undefined Status",
-    };
-}
-*/
-function getStatusMessage($statusCode){
     return match($statusCode) {
         200 => "OK",
         400 => "Bad Request",
@@ -259,24 +255,7 @@ function getStatusMessage($statusCode){
  * 
  * @return string
  */
-/*
-function getResponseBody($statusCode, $statusMessage, $uri) : string {
-
-    // not OK
-    if($statusCode != 200) {                                
-        return strtolower($statusMessage);
-    }
-
-    // OK
-    // "/sum?nums=1,2,3" -> "1,2,3" -> [1, 2, 3]
-    $ind = strpos($uri, "=");
-    $numsArr = explode(",", substr($uri, $ind+1));  
-    
-    return array_sum($numsArr);
-}
-*/
-// form body: error message or message for user
-function getBody($statusCode, $requestBody) : string {
+ function getResponseBody($statusCode, $requestBody) : string {
     if($statusCode != 200) {                                // not OK (== server work is not OK)
         return strtolower(getStatusMessage($statusCode));
     }
@@ -307,3 +286,37 @@ function getBody($statusCode, $requestBody) : string {
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * @param string $requestBody
+ * 
+ * @return array
+ */
+#+
+function getRequestBodyAsArray($requestBody) : array {
+    $arr = explode("&", $requestBody);
+    $bodyAsArray = [];
+    
+    foreach($arr as $item){
+        $keyValuePair = explode("=", $item);
+        $bodyAsArray += [$keyValuePair[0] => $keyValuePair[1]];
+    }
+
+    return $bodyAsArray;
+}
+
+/**
+ * Checks if array $body contains "login" and "password" as its keys.
+ * 
+ * @param array $body
+ * 
+ * @return bool 
+ */
+#+
+function isRequestBodyValid($body) {
+    return (array_key_exists("login", $body) && array_key_exists("password", $body));
+}
+
+function isLoginPasswordPairValid($body) {
+    $arr = file_get_contents("passwords.txt");
+    var_dump($arr);
+}
