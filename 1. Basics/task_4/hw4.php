@@ -1,24 +1,33 @@
 <?php
+/**
+ * File to search logins and passwords
+ */
+define(constant_name: "FILE_NAME", value: "passwords.txt");
 
-// constant for file!!!!!!!
-// constant arr for color, status, message !!!!!!!!!
+/**
+ * Array contains data for response forming according its status code
+ */
+define("RESPONSE_DATA", [
+    "200" => ["statusMessage" => "OK", "bodyMessage" => "FOUND", "color" => "green"],
+    "400" => ["statusMessage" => "Bad Request", "color" => "red"],
+    "404" => ["statusMessage" => "Not Found"],
+    "500" => ["statusMessage" => "Internal Server Error", "color" => "blue"],
+]);
 
-date_default_timezone_set("Europe/Kyiv");       // real time, також змінено в php.ini
-
+date_default_timezone_set("Europe/Kyiv");
 
 /**
  * Returns the input request example as a string
  * 
  * @return string 
  */
-#++
 function readHttpLikeInput() : string {
     $f = fopen( 'php://stdin', 'r' );
     $store = "";
     $toread = 0;
    
     while( $line = fgets( $f ) ) {
-        $store .= $line; //preg_replace("/\r/", "", $line);
+        $store .= preg_replace("/\r/", "", $line);
         
         if (preg_match('/Content-Length: (\d+)/',$line,$m))
             $toread=$m[1]*1; 
@@ -41,7 +50,6 @@ $contents = readHttpLikeInput();
  * @param array     $headers
  * @param string    $body
  */
-#++
 function outputHttpResponse($statuscode, $statusmessage, $headers, $body) : void {
     echo "HTTP/1.1 $statuscode $statusmessage" . PHP_EOL; 
 
@@ -58,28 +66,12 @@ function outputHttpResponse($statuscode, $statusmessage, $headers, $body) : void
  * @param string    $method
  * @param string    $uri
  * @param array     $headers
- * @param array    $body
+ * @param array     $body
  */
-/*
- function processHttpRequest($method, $uri, $headers=null, $body=null) : void {
-    $statuscode = getResponseStatusCode($method, $uri);
-    $statusmessage = getResponseStatusMessage($statuscode); 
-    $body = getResponseBody($statuscode, $statusmessage, $uri);
-    $headers = [
-        "Date" => date(DATE_RFC1123),                 
-        "Server" => "Apache/2.2.14 (Win32)",
-        "Content-Length" => strlen($body),
-        "Connection" => "Closed",      
-        "Content-Type" => "text/html; charset=utf-8",
-    ];
-   
-    outputHttpResponse($statuscode, $statusmessage, $headers, $body);
-}
-*/
 function processHttpRequest($method, $uri, $headers, $body) : void {
-    $statuscode = getResponseStatusCode($method, $uri, $headers["Content-Type"], $body);
-    $statusmessage = getResponseStatusMessage($statuscode);
-    $responseBody = ""; //getBody($statuscode, $body);
+    $statusCode = getResponseStatusCode($method, $uri, $headers["Content-Type"], $body);
+    $statusMessage = getResponseStatusMessage($statusCode);
+    $responseBody = getResponseBody($statusCode);
 
     $headers = [
         "Date" => date(DATE_RFC1123),                           
@@ -89,7 +81,7 @@ function processHttpRequest($method, $uri, $headers, $body) : void {
         "Content-Type" => "text/html; charset=utf-8",       
     ];
    
-    outputHttpResponse($statuscode, $statusmessage, $headers, $responseBody);
+    outputHttpResponse($statusCode, $statusMessage, $headers, $responseBody);
 }
 
 /**
@@ -99,7 +91,6 @@ function processHttpRequest($method, $uri, $headers, $body) : void {
  *
  * @return array
  */
-#++
 function parseTcpStringAsHttpRequest($string) : array {
     $strToParse = getStrToParse($string);
     $strAsArr = cleanArray(explode(PHP_EOL, $strToParse));
@@ -126,7 +117,7 @@ function parseTcpStringAsHttpRequest($string) : array {
     // $headers[headerName] = headerValue
     while($i < $arrSize) {
         $ind = strpos($strAsArr[$i], ":");
-        $headers[trim(substr($strAsArr[$i], 0, $ind))] = trim(substr($strAsArr[$i], $ind+1));
+        $headers[trim(string: substr($strAsArr[$i], 0, $ind))] = trim(substr($strAsArr[$i], $ind+1));
         $i++;
     }
     
@@ -134,14 +125,13 @@ function parseTcpStringAsHttpRequest($string) : array {
         "method" => trim($methodAndURI[0]),
         "uri" => trim($methodAndURI[1]),
         "headers" => $headers,
-        "body" => getRequestBodyAsArray($body),
+        "body" => getStringContentAsPairsArray($body, "&", "="),
     );
 }
 
 $http = parseTcpStringAsHttpRequest($contents);
 processHttpRequest($http["method"], $http["uri"], $http["headers"], $http["body"]);
 
-///////////////////////////////////////////////////////////////////////////////////////////
 /**
  * Gets string as it input and returns a string which let use PHP_EOL as a delimeter
  * 
@@ -149,7 +139,6 @@ processHttpRequest($http["method"], $http["uri"], $http["headers"], $http["body"
  * 
  * @return string
  */
-#++
 function getStrToParse($string) : string {
     $str = preg_replace("/\r/", "", $string);
     $str = preg_replace("/\n/", PHP_EOL, $str);
@@ -164,7 +153,6 @@ function getStrToParse($string) : string {
  * 
  * @return array
  */
-#++
 function cleanArray($arr) : array {
     $resultArr = [];
     
@@ -183,16 +171,9 @@ function cleanArray($arr) : array {
  * 
  * @return bool
  */
-#++
 function hasBody($string, $arrLastItem) : bool {
     return preg_match('/Content-Length:/', $string) || !preg_match('/:/', $arrLastItem);
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////
-// MY FUNCTIONS
-// condition combination as a table in "condition_combinations_4.xlsx"
-// (i don't like the realization...)
-
 
 /**
  * Analyzes request anr return status code for response
@@ -200,108 +181,26 @@ function hasBody($string, $arrLastItem) : bool {
  * @param string    $method
  * @param string    $uri
  * @param string    $contentType
- * @param string    $body
+ * @param array     $body
  * 
  * @return int
  */
 function getResponseStatusCode($method, $uri, $contentType, $body) : int {
     
-    // 400 : Bad Request
-    // 400 : invalid method
+    // 400 : Bad Request (invalid method)
     if($method != "POST") return 400;
 
-    // 400 : invalid "Content-type" header
+    // 400 : Bad Request (invalid "Content-type" header)
     if($contentType != "application/x-www-form-urlencoded" ) return 400;
 
-    // 400 : invalid body
+    // 400 : Bad Request (invalid body)
     if(!isRequestBodyValid($body)) return 400;
 
-    // 404 : Not Found
-    // 404 : invalid uri
+    // 404 : Not Found (invalid uri)
     if($uri != "/api/checkLoginAndPassword") return 404;
     
-    // 500 : Internal Server Error
-    // 500 : file not exist
-    if(!file_exists("passwords.txt")) return 500;
-
-    // 404 : Not Found
-    // 404 : login or/and password not found
-    //if(isLoginPasswordPairValid($body))
-
-
-    return 200;
-}
-
-
-/** 
- * @param int $statusCode
- * 
- * @return string
- */
-function getResponseStatusMessage($statusCode) : string {
-    return match($statusCode) {
-        200 => "OK",
-        400 => "Bad Request",
-        404 => "Not Found",
-        500 => "Internal Server Error",
-        default => "Undefined Status",
-    };
-}
-
-/**
- * @param int       $statusCode
- * @param string    $statusMessage
- * @param string    $uri
- * 
- * @return string
- */
- function getResponseBody($statusCode, $requestBody) : string {
-    if($statusCode != 200) {                                // not OK (== server work is not OK)
-        return strtolower(getStatusMessage($statusCode));
-    }
-
-    // OK (== server work is OK)
-    //login=student&password=12345
-    $bodyAsArray = explode("&", $requestBody);
-    $logPassArr = array();
-    $i = 0;
-    while($i < count($bodyAsArray)){
-        $keyValuePair = explode("=", $bodyAsArray[$i]);
-        $logPassArr[$keyValuePair[0]] = $keyValuePair[1];
-        $i++;
-    }
-    // invalid requestBody
-    if(!(array_key_exists("login", $logPassArr) && array_key_exists("password", $logPassArr))) {
-        return
-            '<h1 style="color:magenta">SOMETHING WRONG...<br>Try again later or contact to your admin</h1>';
-    }
-
-    // pair "log/pass" exist: log - OK, pass - OK -> Welcome!
-
-    // pair "log/pass" DOES NOT exist -> Зареєструватися?
-    
-    // pair "log/pass" exist: log - OK, pass - NOT OK -> Забули пароль? 
-    
-    return "OK";
-}
-
-/////////////////////////////////////////////////////////////////////////////////////////
-/**
- * @param string $requestBody
- * 
- * @return array
- */
-#+
-function getRequestBodyAsArray($requestBody) : array {
-    $arr = explode("&", $requestBody);
-    $bodyAsArray = [];
-    
-    foreach($arr as $item){
-        $keyValuePair = explode("=", $item);
-        $bodyAsArray += [$keyValuePair[0] => $keyValuePair[1]];
-    }
-
-    return $bodyAsArray;
+    // options: 200, 500, 404
+    return getAccessStatus($body);
 }
 
 /**
@@ -311,12 +210,106 @@ function getRequestBodyAsArray($requestBody) : array {
  * 
  * @return bool 
  */
-#+
 function isRequestBodyValid($body) {
     return (array_key_exists("login", $body) && array_key_exists("password", $body));
 }
 
-function isLoginPasswordPairValid($body) {
-    $arr = file_get_contents("passwords.txt");
-    var_dump($arr);
+/**
+ * Returns one of 200, 404, 500
+ * 
+ * @param array $body
+ * 
+ * @return int
+ */
+function getAccessStatus($body) : int {
+
+    // 500 : Internal Server Error (file not exist)
+    if(!file_exists(FILE_NAME)) return 500;
+
+    $logAndPassPairsAsArr = getFileContentAsPairsArray(FILE_NAME, PHP_EOL, ":");
+
+    foreach($logAndPassPairsAsArr as $login => $password) {
+        
+        if($body['login'] == $login) {
+            if($body['password'] == $password) {
+                
+                // login found, password matched
+                return 200;
+            }
+
+            // login found, but password DIDN'T match
+            else        
+                break;
+        }
+    }
+
+    // 404 : Not Found (login or/and password not found)
+    return 404;
+}
+
+/**
+ * @param string $filename
+ * @param string $delim1
+ * @param string $delim2
+ * 
+ * @return array
+ */
+function getFileContentAsPairsArray($filename, $delim1, $delim2) : array {
+    return getStringContentAsPairsArray(file_get_contents($filename), $delim1, $delim2);
+}
+
+/**
+ * @param string $str
+ * @param string $delim1
+ * @param string $delim2
+ * 
+ * @return array
+ */
+function getStringContentAsPairsArray($str, $delim1, $delim2) : array {
+    $arr = cleanArray(explode($delim1, $str));
+    $pairsAsArr = [];
+    
+    foreach($arr as $pair) {
+        $p = explode($delim2, $pair);subject: 
+        $pairsAsArr += [trim($p[0])=>trim($p[1])];
+    }
+    
+    return $pairsAsArr;
+}
+
+/**
+ * @param int $statusCode
+ * 
+ * @return string
+ */
+function getResponseStatusMessage($statusCode) : string {
+    return RESPONSE_DATA[$statusCode]['statusMessage'];
+}
+
+/**
+* @param int $statusCode
+*
+* @return string
+*/
+function getResponseBody($statusCode) : string {
+    
+    // example: <h1 style="color:green">FOUND</h1>
+    $body = "<h1";
+
+    if(isset(RESPONSE_DATA[$statusCode]['color'])) {
+        $body .= ' style="color:' . RESPONSE_DATA[$statusCode]['color'] . '"';
+    }
+
+    $body .= ">";
+    
+    if(isset(RESPONSE_DATA[$statusCode]['bodyMessage'])) {
+        $body .= RESPONSE_DATA[$statusCode]['bodyMessage'];
+    }
+    else {
+        $body .=  strtolower(RESPONSE_DATA[$statusCode]['statusMessage']);
+    }
+
+    $body .= "</h1>";
+
+    return $body;
 }
