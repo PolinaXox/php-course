@@ -8,7 +8,7 @@ define(constant_name: "FILE_NAME", value: "passwords.txt");
  * Array contains data for response forming according its status code
  */
 define("RESPONSE_DATA", [
-    "200" => ["statusMessage" => "OK", "bodyMessage" => "FOUND", "color" => "green"],
+    "200" => ["statusMessage" => "OK", "color" => "green"],
     "400" => ["statusMessage" => "Bad Request", "color" => "red"],
     "404" => ["statusMessage" => "Not Found"],
     "500" => ["statusMessage" => "Internal Server Error", "color" => "blue"],
@@ -45,6 +45,8 @@ function readHttpLikeInput() : string {
 $contents = readHttpLikeInput();
 
 /**
+ * Outputs HTTP responce
+ * 
  * @param int       $statuscode
  * @param string    $statusmessage
  * @param array     $headers
@@ -61,7 +63,7 @@ function outputHttpResponse($statuscode, $statusmessage, $headers, $body) : void
 }
 
 /**
- * Processes the request and outputs the response
+ * Processes the request, creates and outputs the response
  * 
  * @param string    $method
  * @param string    $uri
@@ -69,19 +71,8 @@ function outputHttpResponse($statuscode, $statusmessage, $headers, $body) : void
  * @param array     $body
  */
 function processHttpRequest($method, $uri, $headers, $body) : void {
-    $statusCode = getResponseStatusCode($method, $uri, $headers["Content-Type"], $body);
-    $statusMessage = getResponseStatusMessage($statusCode);
-    $responseBody = getResponseBody($statusCode);
-
-    $headers = [
-        "Date" => date(DATE_RFC1123),                           
-        "Server" => "Apache/2.2.14 (Win32)",                
-        "Content-Length" => strlen($responseBody), 
-        "Connection" => "Closed",          
-        "Content-Type" => "text/html; charset=utf-8",       
-    ];
-   
-    outputHttpResponse($statusCode, $statusMessage, $headers, $responseBody);
+    $response = getResponse($method, $uri, $headers, $body);
+    outputHttpResponse($response['statusCode'], $response['statusMessage'], $response['headers'], $response['body']); 
 }
 
 /**
@@ -132,19 +123,34 @@ function parseTcpStringAsHttpRequest($string) : array {
 $http = parseTcpStringAsHttpRequest($contents);
 processHttpRequest($http["method"], $http["uri"], $http["headers"], $http["body"]);
 
+
+//REQUEST PROCESSNG FUNCTIONS///////////////////////////////////////////////////////////
+
 /**
  * Gets string as it input and returns a string which let use PHP_EOL as a delimeter
  * 
- * @param $string
+ * @param string $string
  * 
  * @return string
  */
-function getStrToParse($string) : string {
+ function getStrToParse($string) : string {
     $str = preg_replace("/\r/", "", $string);
     $str = preg_replace("/\n/", PHP_EOL, $str);
 
     return $str;
 }
+
+/**
+ * @param string $string
+ * @param string $arrLastItem
+ * 
+ * @return bool
+ */
+function hasBody($string, $arrLastItem) : bool {
+    return preg_match('/Content-Length:/', $string) || !preg_match('/:/', $arrLastItem);
+}
+
+//ARRAYS PROCESSNG FUNCTIONS////////////////////////////////////////////////////////////
 
 /**
  * Removes items which are empty lines from the array
@@ -165,87 +171,7 @@ function cleanArray($arr) : array {
     return $resultArr;
 }
 
-/**
- * @param string $string
- * @param string $arrLastItem
- * 
- * @return bool
- */
-function hasBody($string, $arrLastItem) : bool {
-    return preg_match('/Content-Length:/', $string) || !preg_match('/:/', $arrLastItem);
-}
-
-/**
- * Analyzes request anr return status code for response
- * 
- * @param string    $method
- * @param string    $uri
- * @param string    $contentType
- * @param array     $body
- * 
- * @return int
- */
-function getResponseStatusCode($method, $uri, $contentType, $body) : int {
-    
-    // 400 : Bad Request (invalid method)
-    if($method != "POST") return 400;
-
-    // 400 : Bad Request (invalid "Content-type" header)
-    if($contentType != "application/x-www-form-urlencoded" ) return 400;
-
-    // 400 : Bad Request (invalid body)
-    if(!isRequestBodyValid($body)) return 400;
-
-    // 404 : Not Found (invalid uri)
-    if($uri != "/api/checkLoginAndPassword") return 404;
-    
-    // options: 200, 500, 404
-    return getAccessStatus($body);
-}
-
-/**
- * Checks if array $body contains "login" and "password" as its keys.
- * 
- * @param array $body
- * 
- * @return bool 
- */
-function isRequestBodyValid($body) {
-    return (array_key_exists("login", $body) && array_key_exists("password", $body));
-}
-
-/**
- * Returns one of 200, 404, 500
- * 
- * @param array $body
- * 
- * @return int
- */
-function getAccessStatus($body) : int {
-
-    // 500 : Internal Server Error (file not exist)
-    if(!file_exists(FILE_NAME)) return 500;
-
-    $logAndPassPairsAsArr = getFileContentAsPairsArray(FILE_NAME, PHP_EOL, ":");
-
-    foreach($logAndPassPairsAsArr as $login => $password) {
-        
-        if($body['login'] == $login) {
-            if($body['password'] == $password) {
-                
-                // login found, password matched
-                return 200;
-            }
-
-            // login found, but password DIDN'T match
-            else        
-                break;
-        }
-    }
-
-    // 404 : Not Found (login or/and password not found)
-    return 404;
-}
+// FILES PROCESSING FUNCTIONS ////////////////////////////////////////////////////
 
 /**
  * @param string $filename
@@ -257,6 +183,8 @@ function getAccessStatus($body) : int {
 function getFileContentAsPairsArray($filename, $delim1, $delim2) : array {
     return getStringContentAsPairsArray(file_get_contents($filename), $delim1, $delim2);
 }
+
+// STRINGS PROCESSING FUNCTIONS ////////////////////////////////////////////////////
 
 /**
  * @param string $str
@@ -277,6 +205,136 @@ function getStringContentAsPairsArray($str, $delim1, $delim2) : array {
     return $pairsAsArr;
 }
 
+// RESPONSE MAKING FUNCTIONS///////////////////////////////////////////////////////////
+
+/**
+ * Forms the server response depends on the client request and server capabilities(file existance)
+ * 
+ * @param string    $requestMethod
+ * @param string    $requestUri
+ * @param array     $requestHeaders
+ * @param array     $requestBody
+ * @return array
+ */
+function getResponse($requestMethod, $requestUri, $requestHeaders, $requestBody) : array {
+    
+    try{
+        checkRequestMethod($requestMethod);
+        checkRequestUri($requestUri);
+        checkRequestContentTypeValue($requestHeaders["Content-Type"]);
+        checkRequestBody($requestBody);
+        checkFileExistance(FILE_NAME);
+
+        $codeAndMessage = getAccess($requestBody);
+        $statusCode = $codeAndMessage['statusCode'];
+        $bodyMessage = $codeAndMessage['bodyMessage'];
+    }
+    catch(Exception $ex) {
+        $statusCode = $ex->getCode();
+        $bodyMessage = $ex->getMessage();
+    };
+
+    $statusMessage = getResponseStatusMessage($statusCode);
+    $body = getResponseBody($statusCode, $bodyMessage);
+    $headers = [
+        "Date" => date(DATE_RFC1123),                           
+        "Server" => "Apache/2.2.14 (Win32)",                
+        "Content-Length" => strlen($body), 
+        "Connection" => "Closed",          
+        "Content-Type" => "text/html; charset=utf-8",       
+    ];
+        
+    return [
+        'statusCode' => $statusCode,
+        'statusMessage' => $statusMessage,
+        'headers' => $headers,
+        'body' => $body,
+    ];
+}
+
+/**
+ * @param string $method
+ * @throws Exception
+ * @return void
+ */
+function checkRequestMethod(string $method) : void {
+    if( $method === "POST") return;
+
+    throw new Exception("Method is invalid. The method POST is needed.", 400);
+}
+
+/**
+ * @param string $uri
+ * @throws Exception
+ * @return void
+ */
+function checkRequestUri(string $uri) : void {
+    if($uri === "/api/checkLoginAndPassword") return;
+
+    throw new Exception("URI is invalid.", 400);
+}
+
+/**
+ * @param string $contentType
+ * @throws Exception
+ * @return void
+ */
+function checkRequestContentTypeValue(string $contentType) : void {
+    if($contentType === "application/x-www-form-urlencoded") return;
+    
+    throw new Exception("Header's 'Content-Type' value is invalid.", 400);
+}
+
+/**
+ * @param array $body
+ * @throws Exception
+ * @return void
+ */
+function checkRequestBody(array $body) : void {
+    if(array_key_exists("login", $body) && array_key_exists("password", $body)) return;
+    
+    throw new Exception("Request body doesn't content 'login' or/and 'password' variable(s)", 400);
+}
+
+/**
+ * @param string $file
+ * @throws Exception
+ * @return void
+ */
+function checkFileExistance(string $file) : void {
+    if(file_exists($file)) return;
+    
+    throw new Exception('File ' . $file . ' doesn`t exist', 500);
+}
+
+/**
+ * Grants or denies access. Returns the result code and message.
+ * @param array $body
+ * @throws Exception
+ * @return array
+ */
+function getAccess($body) : array {
+    $logAndPassPairsAsArr = getFileContentAsPairsArray(FILE_NAME, PHP_EOL, ":");
+
+    foreach($logAndPassPairsAsArr as $login => $password) {
+        if($body['login'] == $login) {
+            if($body['password'] == $password) {
+
+                // login found, password matched
+                return ['statusCode' => 200, 'bodyMessage' => 'FOUND'];
+            }
+
+            // login found, but password DIDN'T match
+            else
+                throw new Exception("Password didn`t match. Fogot password?", 404);        
+        }
+    }
+
+    // 404 : Not Found (login not found)
+    return ['statusCode' => 404, 'bodyMessage' => 'User not found. Would you like to register?'];;
+}
+
+
 /**
  * @param int $statusCode
  * 
@@ -287,29 +345,18 @@ function getResponseStatusMessage($statusCode) : string {
 }
 
 /**
-* @param int $statusCode
-*
-* @return string
-*/
-function getResponseBody($statusCode) : string {
+ * @param int       $statusCode
+ * @param string    $bodyMessage
+ * 
+ * @return string
+ */
+function getResponseBody(int $statusCode, string $bodyMessage) : string {
     
     // example: <h1 style="color:green">FOUND</h1>
-    $body = "<h1";
-
-    if(isset(RESPONSE_DATA[$statusCode]['color'])) {
-        $body .= ' style="color:' . RESPONSE_DATA[$statusCode]['color'] . '"';
-    }
-
-    $body .= ">";
-    
-    if(isset(RESPONSE_DATA[$statusCode]['bodyMessage'])) {
-        $body .= RESPONSE_DATA[$statusCode]['bodyMessage'];
-    }
-    else {
-        $body .=  strtolower(RESPONSE_DATA[$statusCode]['statusMessage']);
-    }
-
-    $body .= "</h1>";
+    $style = isset(RESPONSE_DATA[$statusCode]['color']) ?
+                    ' style="color:' . RESPONSE_DATA[$statusCode]['color'] . '"' :
+                    '';
+    $body = '<h1'. $style . '>' . $bodyMessage . '</h1>';
 
     return $body;
 }
