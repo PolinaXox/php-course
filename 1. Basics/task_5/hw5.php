@@ -112,12 +112,12 @@ function parseTcpStringAsHttpRequest($string) : array {
         $i++;
     }
     
-    return [
+    return array(
         "method" => trim($methodAndURI[0]),
         "uri" => trim($methodAndURI[1]),
         "headers" => $headers,
         "body" => getStringContentAsPairsArray($body, "&", "="),
-    ];
+    );
 }
 
 $http = parseTcpStringAsHttpRequest($contents);
@@ -198,7 +198,7 @@ function getStringContentAsPairsArray($str, $delim1, $delim2) : array {
     $pairsAsArr = [];
     
     foreach($arr as $pair) {
-        $p = explode($delim2, $pair);
+        $p = explode($delim2, $pair);subject: 
         $pairsAsArr += [trim($p[0])=>trim($p[1])];
     }
     
@@ -225,7 +225,7 @@ function getResponse($requestMethod, $requestUri, $requestHeaders, $requestBody)
         checkRequestBody($requestBody);
         checkFileExistance(FILE_NAME);
 
-        $codeAndMessage = checkLoginAndPassword($requestBody);
+        $codeAndMessage = getAccess($requestBody);
         $statusCode = $codeAndMessage['statusCode'];
         $bodyMessage = $codeAndMessage['bodyMessage'];
     }
@@ -308,12 +308,12 @@ function checkFileExistance(string $file) : void {
 }
 
 /**
- * Checks user's login and password. Returns the result status code and message.
+ * Grants or denies access. Returns the result code and message.
  * @param array $body
  * @throws Exception
  * @return array
  */
-function checkLoginAndPassword($body) : array {
+function getAccess($body) : array {
     $logAndPassPairsAsArr = getFileContentAsPairsArray(FILE_NAME, PHP_EOL, ":");
 
     foreach($logAndPassPairsAsArr as $login => $password) {
@@ -325,12 +325,13 @@ function checkLoginAndPassword($body) : array {
             }
 
             // login found, but password DIDN'T match
-            throw new Exception("Password didn`t match. Fogot password?", 404);        
+            else
+                throw new Exception("Password didn`t match. Fogot password?", 404);        
         }
     }
 
     // 404 : Not Found (login not found)
-    return ['statusCode' => 404, 'bodyMessage' => 'User not found. Would you like to register?'];
+    return ['statusCode' => 404, 'bodyMessage' => 'User not found. Would you like to register?'];;
 }
 
 
