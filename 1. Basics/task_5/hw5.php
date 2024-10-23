@@ -1,24 +1,36 @@
 <?php
-date_default_timezone_set("Europe/Kyiv");
+date_default_timezone_set('Europe/Kyiv');
 
 /**
  * Array contains data for response forming according its status code
  */
 
-define("RESPONSE_DATA", [
-    "200" => ["statusMessage" => "OK"],
-    "400" => ["statusMessage" => "Bad Request"],
-    "403" => ["statusMessage" => "Forbidden"],
-    "404" => ["statusMessage" => "Not Found"],
+define('RESPONSE_DATA', [
+    '200' => ['statusMessage' => 'OK'],
+    '400' => ['statusMessage' => 'Bad Request'],
+    '403' => ['statusMessage' => 'Forbidden'],
+    '404' => ['statusMessage' => 'Not Found'],
 ]);
 
+/**
+ * Array contains the corresponding base directories for different hosts
+ */
+
+define('HOST_DIRECTORY', [
+    'student.shpp.me' => ['baseDirectory' => 'student'],
+    'another.shpp.me' => ['baseDirectory' => 'another'],
+]);
+
+/**
+ * Defaut base directory for unknown hosts
+ */
+define('DEFAULT_HOST_DIRECTORY', 'else');
 
 /**
  * Returns the input request example as a string
  * 
  * @return string 
  */
-// не чіпати
 function readHttpLikeInput() : string {
     $f = fopen( 'php://stdin', 'r' );
     $store = "";
@@ -40,7 +52,6 @@ function readHttpLikeInput() : string {
     return $store;
 }
 
-//не чіпати
 $contents = readHttpLikeInput();
 
 /**
@@ -51,7 +62,6 @@ $contents = readHttpLikeInput();
  * @param array     $headers
  * @param string    $body
  */
-// не чипаю
 function outputHttpResponse($statuscode, $statusmessage, $headers, $body) : void {
     echo "HTTP/1.1 $statuscode $statusmessage" . PHP_EOL; 
 
@@ -70,9 +80,8 @@ function outputHttpResponse($statuscode, $statusmessage, $headers, $body) : void
  * @param array     $headers
  * @param array     $body
  */
-// переписати, скоріше через переписування getResponse();
 function processHttpRequest($method, $uri, $headers, $body) : void {
-    $response = getResponse($method, $uri, $headers, $body);
+    $response = getResponse($method, $uri, $headers);
     outputHttpResponse($response['statusCode'], $response['statusMessage'], $response['headers'], $response['body']); 
 }
 
@@ -83,7 +92,6 @@ function processHttpRequest($method, $uri, $headers, $body) : void {
  *
  * @return array
  */
-// можливо, переписати читання body...
 function parseTcpStringAsHttpRequest($string) : array {
     $strToParse = getStrToParse($string);
     $strAsArr = cleanArray(explode(PHP_EOL, $strToParse));
@@ -95,7 +103,7 @@ function parseTcpStringAsHttpRequest($string) : array {
     $body = "";
     $arrSize = count($strAsArr);
     
-    if($arrSize > 0) { // є питаннячка, тіло - кілька рядків...
+    if($arrSize > 0) {
         if(hasBody($string, $strAsArr[$arrSize-1])) {
             $body = array_pop($strAsArr);
             $arrSize--;
@@ -114,17 +122,15 @@ function parseTcpStringAsHttpRequest($string) : array {
         $i++;
     }
     
-    return array(
+    return [
         "method" => trim($methodAndURI[0]),
         "uri" => trim($methodAndURI[1]),
         "headers" => $headers,
         "body" => $body,
-    );
+    ];
 }
 
-// не чіпаю
 $http = parseTcpStringAsHttpRequest($contents);
-// не чіпаю
 processHttpRequest($http["method"], $http["uri"], $http["headers"], $http["body"]);
 
 
@@ -137,7 +143,6 @@ processHttpRequest($http["method"], $http["uri"], $http["headers"], $http["body"
  * 
  * @return string
  */
-// не чіпаю
  function getStrToParse($string) : string {
     $str = preg_replace("/\r/", "", $string);
     $str = preg_replace("/\n/", PHP_EOL, $str);
@@ -151,16 +156,8 @@ processHttpRequest($http["method"], $http["uri"], $http["headers"], $http["body"
  * 
  * @return bool
  */
-// OK (AБО Content-Length: 0 ????? є питаннячка)
 function hasBody($string, $arrLastItem) : bool {
     return preg_match('/Content-Length:/', $string) || !preg_match('/:/', $arrLastItem);
-
-    /*
-    if(preg_match('/Content-Length:\s*(\d+)/', $string, $m))
-        return $m[1] !== FALSE && $m[1]*1 > 0;
-    
-    return !preg_match('/:/', $arrLastItem);
-    */
 }
 
 //ARRAYS PROCESSNG FUNCTIONS////////////////////////////////////////////////////////////
@@ -172,7 +169,6 @@ function hasBody($string, $arrLastItem) : bool {
  * 
  * @return array
  */
-// не чіпаю
 function cleanArray($arr) : array {
     $resultArr = [];
     
@@ -185,75 +181,39 @@ function cleanArray($arr) : array {
     return $resultArr;
 }
 
-// FILES PROCESSING FUNCTIONS ////////////////////////////////////////////////////
-
-/**
- * @param string $filename
- * @param string $delim1
- * @param string $delim2
- * 
- * @return array
- */
-// можливо, переписати або видалити
-function getFileContentAsPairsArray($filename, $delim1, $delim2) : array {
-    return getStringContentAsPairsArray(file_get_contents($filename), $delim1, $delim2);
-}
-
-// STRINGS PROCESSING FUNCTIONS ////////////////////////////////////////////////////
-
-/**
- * @param string $str
- * @param string $delim1
- * @param string $delim2
- * 
- * @return array
- */
-// можливо переписати або видалии
-function getStringContentAsPairsArray($str, $delim1, $delim2) : array {
-    $arr = cleanArray(explode($delim1, $str));
-    $pairsAsArr = [];
-    
-    foreach($arr as $pair) {
-        $p = explode($delim2, $pair);subject: 
-        $pairsAsArr += [trim($p[0])=>trim($p[1])];
-    }
-    
-    return $pairsAsArr;
-}
-
 // RESPONSE MAKING FUNCTIONS///////////////////////////////////////////////////////////
 
 /**
- * Forms the server response depends on the client request and server capabilities(file existance)
+ * Forms the server response depends on the client request
  * 
  * @param string    $requestMethod
  * @param string    $requestUri
  * @param array     $requestHeaders
- * @param array     $requestBody
  * @return array
  */
-// точно переписати!!!
-function getResponse($requestMethod, $requestUri, $requestHeaders, $requestBody) : array {
+function getResponse($requestMethod, $requestUri, $requestHeaders) : array {
     
     try{
         checkRequestMethod($requestMethod);
-        checkHost($requestHeaders['Host']);
-        //checkRequestUri($requestUri);
-        //checkRequestContentTypeValue($requestHeaders["Content-Type"]);
-        //checkRequestBody($requestBody);
-        //checkFileExistance(FILE_NAME);
+        $baseDirectory = getBaseDirectoryByHost($requestHeaders);
+        $filepath = getFilepath($baseDirectory, $requestUri);
+        $fileName = basename($filepath);        
+        
+        if(!file_exists($filepath)) {
+            throw new Exception('File <strong>' . $fileName . '</strong> not found', 404);
+        }
 
-        $codeAndMessage = getAccess($requestBody);
-        $statusCode = $codeAndMessage['statusCode'];
-        $bodyMessage = $codeAndMessage['bodyMessage'];
-    }
-    catch(Exception $ex) {
+        $fileText = file_get_contents($filepath);
+        $statusCode = 200;
+        $body = getResponseBody($statusCode, $fileText, $fileName);
+    } catch(Exception $ex) {
         $statusCode = $ex->getCode();
         $bodyMessage = $ex->getMessage();
+        $body = getResponseBody($statusCode, $bodyMessage);
     };
 
     $statusMessage = getResponseStatusMessage($statusCode);
-    $body = getResponseBody($statusCode, $bodyMessage);
+    
     $headers = [
         "Date" => date(DATE_RFC1123),                           
         "Server" => "Apache/2.2.14 (Win32)",                
@@ -275,104 +235,17 @@ function getResponse($requestMethod, $requestUri, $requestHeaders, $requestBody)
  * @throws Exception
  * @return void
  */
-// можливо переписати або видалити
-// REDONE (POST ??? or GET only)
 function checkRequestMethod(string $method) : void {
-    if( $method === "GET" || $method === "POST") return;
+    if( $method === "GET") return;
 
-    throw new Exception("Method is invalid. The method GET or POST is needed.", 400);
+    throw new Exception("Method is invalid. The method GET is needed.", 400);
 }
-
-// new
-function checkHost($requestHeaders) : void {
-    if(isset($requestHeaders['Host'])) return;
-    
-    throw new Exception("Unknown host. Header 'Host' is absent.", 400);
-}
-
-/**
- * @param string $uri
- * @throws Exception
- * @return void
- */
-// можливо переписати або видалити
-function checkRequestUri(string $uri) : void {
-    if($uri === "/api/checkLoginAndPassword") return;
-
-    throw new Exception("URI is invalid.", 400);
-}
-
-/**
- * @param string $contentType
- * @throws Exception
- * @return void
- */
-// можливо переписти або видалити
-function checkRequestContentTypeValue(string $contentType) : void {
-    if($contentType === "application/x-www-form-urlencoded") return;
-    
-    throw new Exception("Header's 'Content-Type' value is invalid.", 400);
-}
-
-/**
- * @param array $body
- * @throws Exception
- * @return void
- */
-// можливо переписати або видалии
-function checkRequestBody(array $body) : void {
-    if(array_key_exists("login", $body) && array_key_exists("password", $body)) return;
-    
-    throw new Exception("Request body doesn't content 'login' or/and 'password' variable(s)", 400);
-}
-
-/**
- * @param string $file
- * @throws Exception
- * @return void
- */
-// можливо переписати або видалити
-function checkFileExistance(string $file) : void {
-    if(file_exists($file)) return;
-    
-    throw new Exception('File ' . $file . ' doesn`t exist', 500);
-}
-
-/**
- * Grants or denies access. Returns the result code and message.
- * @param array $body
- * @throws Exception
- * @return array
- */
-// можливо переписаи або видалити
-function getAccess($body) : array {
-    $logAndPassPairsAsArr = getFileContentAsPairsArray(FILE_NAME, PHP_EOL, ":");
-
-    foreach($logAndPassPairsAsArr as $login => $password) {
-        if($body['login'] == $login) {
-            if($body['password'] == $password) {
-
-                // login found, password matched
-                return ['statusCode' => 200, 'bodyMessage' => 'FOUND'];
-            }
-
-            // login found, but password DIDN'T match
-            else
-                throw new Exception("Password didn`t match. Fogot password?", 404);        
-        }
-    }
-
-    // 404 : Not Found (login not found)
-    return ['statusCode' => 404, 'bodyMessage' => 'User not found. Would you like to register?'];;
-}
-
 
 /**
  * @param int $statusCode
  * 
  * @return string
  */
-// можливо переписати або видалити
 function getResponseStatusMessage($statusCode) : string {
     return RESPONSE_DATA[$statusCode]['statusMessage'];
 }
@@ -380,17 +253,61 @@ function getResponseStatusMessage($statusCode) : string {
 /**
  * @param int       $statusCode
  * @param string    $bodyMessage
+ * @param string    $fileName
  * 
  * @return string
  */
-// можливо переписати або видалити
-function getResponseBody(int $statusCode, string $bodyMessage) : string {
-    
-    // example: <h1 style="color:green">FOUND</h1>
-    $style = isset(RESPONSE_DATA[$statusCode]['color']) ?
-                    ' style="color:' . RESPONSE_DATA[$statusCode]['color'] . '"' :
-                    '';
-    $body = '<h1'. $style . '>' . $bodyMessage . '</h1>';
+function getResponseBody(int $statusCode, string $bodyMessage, string $fileName=null) : string {
+    $body = '<h1>' . $statusCode . ' ' . RESPONSE_DATA[$statusCode]['statusMessage'] . '</h1>';
+    $body .= PHP_EOL;
+    $body .= $fileName ? '<h2>' . $fileName . '</h2>' : '';
+    $body .= PHP_EOL;
+    $body .= '<p>' . $bodyMessage . '</p>';
 
     return $body;
+}
+
+/**
+ * @param array $headers
+ * 
+ * @throws Exception
+ * 
+ * @return string
+ */
+function getBaseDirectoryByHost(array $headers) : string {
+    if(!isset($headers['Host'])) {
+        throw new Exception('Header \'Host\' is absent', 400);
+    }
+
+    if(!isset(HOST_DIRECTORY[$headers['Host']]))
+        return DEFAULT_HOST_DIRECTORY;
+
+    return HOST_DIRECTORY[$headers['Host']]['baseDirectory'];
+}
+
+/**
+ * @param string $baseDirectory
+ * @param string $uri
+ * 
+ * @throws Exception
+ * 
+ * @return string
+ */
+function getFilepath(string $baseDirectory, string $uri) : string {
+    if($uri === '/') $uri = '/index.html';
+
+    // check if the $uri tries to go out of the base directory
+    if(strpos($uri, '..')) {
+        $filepath = $baseDirectory . $uri;
+
+        while(preg_match('#(\w+/\.{2}/)#', $filepath)) {
+            $filepath = preg_replace('#(\w+/\.{2}/)#', '', $filepath);
+        }
+
+        if(strpos($filepath, $baseDirectory) === FALSE) {
+            throw new Exception('Access is denied', 403);
+        }
+    }
+
+    return $baseDirectory . $uri;
 }
