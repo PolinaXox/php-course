@@ -5,17 +5,14 @@
  * 
  * @return string 
  */
-function readHttpLikeInput() {
+function readHttpLikeInput() : string {
     $f = fopen( 'php://stdin', 'r' );
     $store = "";
     $toread = 0;
-    
+
     while( $line = fgets( $f ) ) {
         $store .= preg_replace("/\r/", "", $line);
 
-        // store a request body length if the body exsist
-        // $m - array of matches
-        // $m[1] <- (\d+); $m[1]*1 - (str->int) - the length of the body
         if (preg_match('/Content-Length: (\d+)/',$line,$m)) {
             $toread=$m[1]*1;
         }
@@ -24,7 +21,6 @@ function readHttpLikeInput() {
               break;
     }
 
-    // if the request has a body, read and store it
     if ($toread > 0) 
         $store .= fread($f, $toread);
     
@@ -40,7 +36,7 @@ $contents = readHttpLikeInput();
  *
  * @return array
  */
-function parseTcpStringAsHttpRequest($string) : array {
+function parseTcpStringAsHttpRequest(string $string) : array {
     $strToParse = getStrToParse($string);
     $strAsArr = cleanArray(explode(PHP_EOL, $strToParse));
     
@@ -70,12 +66,12 @@ function parseTcpStringAsHttpRequest($string) : array {
         $i++;
     }
     
-    return array(
+    return [
         "method" => trim($methodAndURI[0]),
         "uri" => trim($methodAndURI[1]),
         "headers" => $headers,
         "body" => $body,
-    );
+    ];
 }
 
 $http = parseTcpStringAsHttpRequest($contents);
@@ -84,14 +80,14 @@ echo(json_encode($http, JSON_PRETTY_PRINT));
 /**
  * Gets string as it input and returns a string which let use PHP_EOL as a delimeter
  * 
- * @param $string
+ * @param string $string
  * 
  * @return string
  */
-
-function getStrToParse($string) : string {
+function getStrToParse(string $string) : string {
     $str = preg_replace("/\r/", "", $string);
     $str = preg_replace("/\n/", PHP_EOL, $str);
+
     return $str;
 }
 
@@ -102,14 +98,15 @@ function getStrToParse($string) : string {
  * 
  * @return array
  */
-
-function cleanArray($arr) : array {
+function cleanArray(array $arr) : array {
     $resultArr = [];
+
     foreach($arr as $item) {
         if(strlen($item) > 0){
             $resultArr[]=$item;
         }
     }
+    
     return $resultArr;
 }
 
@@ -119,6 +116,6 @@ function cleanArray($arr) : array {
  * 
  * @return bool
  */
-function hasBody($string, $arrLastItem) : bool {
+function hasBody(string $string, string $arrLastItem) : bool {
     return preg_match('/Content-Length:/', $string) || !preg_match('/:/', $arrLastItem);
 }
