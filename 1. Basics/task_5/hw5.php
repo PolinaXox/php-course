@@ -4,7 +4,6 @@ date_default_timezone_set('Europe/Kyiv');
 /**
  * Array contains data for response forming according its status code
  */
-
 define('RESPONSE_DATA', [
     '200' => ['statusMessage' => 'OK'],
     '400' => ['statusMessage' => 'Bad Request'],
@@ -15,7 +14,6 @@ define('RESPONSE_DATA', [
 /**
  * Array contains the corresponding base directories for different hosts
  */
-
 define('HOST_DIRECTORY', [
     'student.shpp.me' => ['baseDirectory' => 'student'],
     'another.shpp.me' => ['baseDirectory' => 'another'],
@@ -133,7 +131,6 @@ function parseTcpStringAsHttpRequest($string) : array {
 $http = parseTcpStringAsHttpRequest($contents);
 processHttpRequest($http["method"], $http["uri"], $http["headers"], $http["body"]);
 
-
 //REQUEST PROCESSNG FUNCTIONS///////////////////////////////////////////////////////////
 
 /**
@@ -189,10 +186,10 @@ function cleanArray($arr) : array {
  * @param string    $requestMethod
  * @param string    $requestUri
  * @param array     $requestHeaders
+ * 
  * @return array
  */
 function getResponse($requestMethod, $requestUri, $requestHeaders) : array {
-    
     try{
         checkRequestMethod($requestMethod);
         $baseDirectory = getBaseDirectoryByHost($requestHeaders);
@@ -232,6 +229,7 @@ function getResponse($requestMethod, $requestUri, $requestHeaders) : array {
 
 /**
  * @param string $method
+ * 
  * @throws Exception
  * @return void
  */
@@ -271,7 +269,6 @@ function getResponseBody(int $statusCode, string $bodyMessage, string $fileName=
  * @param array $headers
  * 
  * @throws Exception
- * 
  * @return string
  */
 function getBaseDirectoryByHost(array $headers) : string {
@@ -290,7 +287,6 @@ function getBaseDirectoryByHost(array $headers) : string {
  * @param string $uri
  * 
  * @throws Exception
- * 
  * @return string
  */
 function getFilepath(string $baseDirectory, string $uri) : string {
