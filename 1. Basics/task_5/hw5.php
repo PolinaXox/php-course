@@ -190,7 +190,7 @@ function cleanArray($arr) : array {
  * @return array
  */
 function getResponse($requestMethod, $requestUri, $requestHeaders) : array {
-    try {
+    try{
         checkRequestMethod($requestMethod);
         $baseDirectory = getBaseDirectoryByHost($requestHeaders);
         $filepath = getFilepath($baseDirectory, $requestUri);
