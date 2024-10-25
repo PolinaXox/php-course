@@ -1,5 +1,14 @@
 <?php
-date_default_timezone_set("Europe/Kyiv");
+date_default_timezone_set('Europe/Kyiv');
+
+/**
+ * Array contains data for response forming according its status code
+ */
+define('RESPONSE_DATA', [
+    '200' => ['statusMessage' => 'OK'],
+    '400' => ['statusMessage' => 'Bad Request'],
+    '404' => ['statusMessage' => 'Not Found'],
+]);
 
 /**
  * Returns the input request example as a string
@@ -17,8 +26,8 @@ function readHttpLikeInput() : string {
         if (preg_match('/Content-Length: (\d+)/',$line,$m))
             $toread=$m[1]*1; 
         
-            if ($line == "\r\n")
-                break;
+        if ($line == "\r\n")
+            break;
     }
     
     if ($toread > 0) 
@@ -30,6 +39,8 @@ function readHttpLikeInput() : string {
 $contents = readHttpLikeInput();
 
 /**
+ * Outputs HTTP response
+ * 
  * @param int       $statuscode
  * @param string    $statusmessage
  * @param array     $headers
@@ -42,30 +53,20 @@ function outputHttpResponse($statuscode, $statusmessage, $headers, $body) : void
         echo "$header : $value" . PHP_EOL;
     }
 
-    echo PHP_EOL . $body; 
+    echo PHP_EOL . $body . PHP_EOL; 
 }
 
 /**
- * Processes the request and outputs the response
+ * Processes the request, creates and outputs the response
  * 
  * @param string    $method
  * @param string    $uri
  * @param array     $headers
  * @param string    $body
  */
- function processHttpRequest($method, $uri, $headers=null, $body=null) : void {
-    $statuscode = getResponseStatusCode($method, $uri);
-    $statusmessage = getResponseStatusMessage($statuscode); 
-    $body = getResponseBody($statuscode, $statusmessage, $uri);
-    $headers = [
-        "Date" => date(DATE_RFC1123),                 
-        "Server" => "Apache/2.2.14 (Win32)",
-        "Content-Length" => strlen($body),
-        "Connection" => "Closed",      
-        "Content-Type" => "text/html; charset=utf-8",
-    ];
-   
-    outputHttpResponse($statuscode, $statusmessage, $headers, $body);
+function processHttpRequest($method, $uri, $headers, $body) : void {
+    $response = getResponse($method, $uri);
+    outputHttpResponse($response['statusCode'], $response['statusMessage'], $response['headers'], $response['body']); 
 }
 
 /**
@@ -105,30 +106,44 @@ function parseTcpStringAsHttpRequest($string) : array {
         $i++;
     }
     
-    return array(
+    return [
         "method" => trim($methodAndURI[0]),
         "uri" => trim($methodAndURI[1]),
         "headers" => $headers,
         "body" => $body,
-    );
+    ];
 }
 
 $http = parseTcpStringAsHttpRequest($contents);
 processHttpRequest($http["method"], $http["uri"], $http["headers"], $http["body"]);
 
+//REQUEST PROCESSNG FUNCTIONS///////////////////////////////////////////////////////////
+
 /**
  * Gets string as it input and returns a string which let use PHP_EOL as a delimeter
  * 
- * @param $string
+ * @param string $string
  * 
  * @return string
  */
- function getStrToParse($string) : string {
+ function getStrToParse(string $string) : string {
     $str = preg_replace("/\r/", "", $string);
     $str = preg_replace("/\n/", PHP_EOL, $str);
 
     return $str;
 }
+
+/**
+ * @param string $string
+ * @param string $arrLastItem
+ * 
+ * @return bool
+ */
+function hasBody(string $string, string $arrLastItem) : bool {
+    return preg_match('/Content-Length:/', $string) || !preg_match('/:/', $arrLastItem);
+}
+
+//ARRAYS PROCESSNG FUNCTIONS////////////////////////////////////////////////////////////
 
 /**
  * Removes items which are empty lines from the array
@@ -137,7 +152,7 @@ processHttpRequest($http["method"], $http["uri"], $http["headers"], $http["body"
  * 
  * @return array
  */
-function cleanArray($arr) : array {
+function cleanArray(array $arr) : array {
     $resultArr = [];
     
     foreach($arr as $item) {
@@ -149,66 +164,95 @@ function cleanArray($arr) : array {
     return $resultArr;
 }
 
-/**
- * @param string $string
- * @param string $arrLastItem
- * 
- * @return bool
- */
-function hasBody($string, $arrLastItem) : bool {
-    return preg_match('/Content-Length:/', $string) || !preg_match('/:/', $arrLastItem);
-}
+// RESPONSE MAKING FUNCTIONS///////////////////////////////////////////////////////////
 
 /**
- * @param string    $method
- * @param string    $uri
+ * Forms the server response depends on the client request
  * 
- * @return int  status code
+ * @param string    $requestMethod
+ * @param string    $requestUri
+ * 
+ * @return array
  */
+function getResponse(string $requestMethod, string $requestUri) : array {
+    try {
+        $statusCode = getResponseStatusCode($requestMethod, $requestUri);   
+        $body = getResponseBody($requestUri); 
+    } catch(Exception $ex) {
+        $statusCode = $ex->getCode();
+        $body = $ex->getMessage();
+    };
 
- // condition combinations as a table in "condition_combinations of method and uri.xlsx"
-function getResponseStatusCode($method, $uri) : int {
-    if($method != "GET" || !preg_match('/\?nums=/i', $uri)) {
-        return 400;
-    }
+    $statusMessage = getResponseStatusMessage($statusCode);
     
-    if(preg_match('#^/sum\?nums=[\d,]+#i', $uri)) { 
-        return 200;
-    }
-
-    return 404;
+    $headers = [
+        "Date" => date(DATE_RFC1123),                           
+        "Server" => "Apache/2.2.14 (Win32)",                
+        "Content-Length" => strlen($body), 
+        "Connection" => "Closed",          
+        "Content-Type" => "text/html; charset=utf-8",       
+    ];
+        
+    return [
+        'statusCode' => $statusCode,
+        'statusMessage' => $statusMessage,
+        'headers' => $headers,
+        'body' => $body,
+    ];
 }
 
-/** 
+/**
+ * @param string $method
+ * 
+ * @throws Exception
+ * @return void
+ */
+function checkRequestMethod(string $method) : void {
+    if( $method === "GET") return;
+
+    throw new Exception("Method is invalid. The method GET is needed.", 400);
+}
+
+/**
  * @param int $statusCode
  * 
  * @return string
  */
-function getResponseStatusMessage($statusCode) : string {
-    return match($statusCode) {
-        200 => "OK",
-        400 => "Bad Request",
-        404 => "Not Found",
-        default => "Undefined Status",
-    };
+function getResponseStatusMessage(int $statusCode) : string {
+    return RESPONSE_DATA[$statusCode]['statusMessage'];
 }
 
 /**
- * @param int       $statusCode
- * @param string    $statusMessage
+ * @param string $method
+ * @param string $uri
+ * 
+ * @throws Exception
+ * 
+ * @return int
+ */
+function getResponseStatusCode(string $method, string $uri) : int {
+    if($method != "GET") {
+        throw new Exception("Method is invalid. The method GET is needed.", 400);
+    }
+
+    if(!preg_match('/\?nums=/i', $uri)) {
+        throw new Exception("Uri is invalid.", 400);
+    }
+    
+    if(!preg_match('#^/sum\?nums=[\d,]+#i', $uri)) { 
+        throw new Exception("not found", 404);
+    }
+
+    return 200;
+}
+
+
+/**
  * @param string    $uri
  * 
  * @return string
  */
-function getResponseBody($statusCode, $statusMessage, $uri) : string {
-
-    // not OK
-    if($statusCode != 200) {                                
-        return strtolower($statusMessage);
-    }
-
-    // OK
-    // "/sum?nums=1,2,3" -> "1,2,3" -> [1, 2, 3]
+ function getResponseBody(string $uri) : string {
     $ind = strpos($uri, "=");
     $numsArr = explode(",", substr($uri, $ind+1));  
     
