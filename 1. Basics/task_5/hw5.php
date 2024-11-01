@@ -192,8 +192,7 @@ function cleanArray($arr) : array {
 function getResponse($requestMethod, $requestUri, $requestHeaders) : array {
     try {
         checkRequestMethod($requestMethod);
-        $baseDirectory = getBaseDirectoryByHost($requestHeaders);
-        $filepath = getFilepath($baseDirectory, $requestUri);
+        $filepath = getFilepath(getBaseDirectoryByHost($requestHeaders), $requestUri);
         $fileName = basename($filepath);        
         
         if(!file_exists($filepath)) {
