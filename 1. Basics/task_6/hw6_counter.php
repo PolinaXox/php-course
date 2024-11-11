@@ -15,5 +15,4 @@ if(!file_exists(FILE_NAME)) {
 
 $counter = file_get_contents(FILE_NAME);
 echo $counter;
-$counter++;
-file_put_contents(FILE_NAME, $counter);
+file_put_contents(FILE_NAME, ++$counter);
