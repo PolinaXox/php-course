@@ -5,7 +5,7 @@
 // The page saves its state for users  
 
 // text fields content which are processing by server or their default values
-$bookId = isset($_REQUEST['bookId']) ? $_REQUEST['bookId'] : '12345';
+$bookId = $_REQUEST['bookId'] ?? '12345';
 $author = isset($_REQUEST['author']) ? $_REQUEST['author'] : 'Tan Ah Teck';
 
 // text fields states: disabled and hidden or not
