@@ -6,16 +6,18 @@
 
 // text fields content which are processing by server or their default values
 $bookId = $_REQUEST['bookId'] ?? '12345';
-$author = isset($_REQUEST['author']) ? $_REQUEST['author'] : 'Tan Ah Teck';
+$author = $_REQUEST['author'] ?? 'Tan Ah Teck';
 
 // text fields states: disabled and hidden or not
-$fieldDisabled = isset($_REQUEST['esRequestWithoutBody']) ? 'disabled' : '';
-$fieldHidden = isset($_REQUEST['esRequestWithoutBody']) ? 'hidden' : '';
+$withoutBody = isset($_REQUEST['esRequestWithoutBody']);
+$fieldDisabled = $withoutBody ? 'disabled' : '';
+$fieldHidden = $withoutBody ? 'hidden' : '';
 
 // check box and radio button states which are processing by server
-$checkBoxRequestWithoutBody = isset($_REQUEST['esRequestWithoutBody']) ? 'checked' : '';
-$rbMethodOptionGET = isset($_REQUEST['methodOptions']) && ($_REQUEST['methodOptions'] === 'GET') ? 'checked' : '';
-$rbMethodOptionPOST = isset($_REQUEST['methodOptions']) && ($_REQUEST['methodOptions'] === 'POST') ? 'checked' : '';
+$methodOptionExists = isset($_REQUEST['methodOptions']);
+$checkBoxRequestWithoutBody = $withoutBody ? 'checked' : '';
+$rbMethodOptionGET = $methodOptionExists && ($_REQUEST['methodOptions'] === 'GET') ? 'checked' : '';
+$rbMethodOptionPOST =  $methodOptionExists && ($_REQUEST['methodOptions'] === 'POST') ? 'checked' : '';
 ?>
 
 <html>
