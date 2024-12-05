@@ -4,14 +4,10 @@
  * @param {*} elementID 
  */
 function clickOnCheckBoxEsRequestMethodIsNotGET(elementID) {
-	let form = document.getElementById("myForm");
+	let form = document.getElementById('myForm');
 	let checkBox = document.getElementById(elementID);
 	
-	if(checkBox.checked == true) {
-		form.method = 'POST';
-	} else {
-		form.method = 'GET';
-	} 	
+	form.method = checkBox.checked ? 'POST' : 'GET'; 	
 }
 
 /**
@@ -19,16 +15,11 @@ function clickOnCheckBoxEsRequestMethodIsNotGET(elementID) {
  * 
  * @param {*} elementID 
  */
-
 function clickOnCheckBoxEsRequestWrongUriStart(elementID) {
-	let form = document.getElementById("myForm");
+	let form = document.getElementById('myForm');
 	let checkBox = document.getElementById(elementID);
 	
-	if (checkBox.checked == true) {
-    	myForm.action = "/notsum";
-	} else {
-    	myForm.action = '/sum';
-  	}
+	form.action = checkBox.checked ? '/notsum' : '/sum';
 }
 
 /**
@@ -37,16 +28,11 @@ function clickOnCheckBoxEsRequestWrongUriStart(elementID) {
  * @param {*} elementID 
  */
 function clickOnCheckBoxEsRequestWithoutNums(elementID) {
-	let input = document.getElementById("nums");
+	let input = document.getElementById('nums');
 	let checkBox = document.getElementById(elementID);
-	let label = document.getElementById("numsLabel");
-	
-	if (checkBox.checked == true) {
-		input.name = 'letters';
-		label.innerHTML = "letters:";
-	} else {
-    	input.name = 'nums';
-		label.innerHTML = "nums:";
-  	}
+	let label = document.getElementById('numsLabel');
+
+	input.name = checkBox.checked ? 'letters' : 'nums';
+	label.innerHTML = input.name + ': ';
 }
 
