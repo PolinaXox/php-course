@@ -12,7 +12,7 @@ processHttpRequest();
 
 // REQUEST PROCESS FUNCTION ///////////////////////////////////////////////////////////////////////
 /**
- * Processes http request, creates and send the reaponse. 
+ * Processes http request, partly forms the response. 
  * Optionally outputs the results as HTML page.
  * 
  * @return void
@@ -27,7 +27,7 @@ function processHttpRequest() : void {
 		header('Error-Info: ' . $invalidRequest['info']);
 	}
 	
-	$responseBody = $invalidRequest ? $invalidRequest['info'] : array_sum(explode(',', $nums));	
+	$responseBody = $invalidRequest ? ($invalidRequest['info'] ?? false) : array_sum(explode(',', $nums));	
 	
 	if($responseBody && !$isHTML) echo $responseBody;
 	
@@ -55,16 +55,16 @@ function checkRequestCorrectness(string|bool $nums) : bool|array {
 	
 	if(!$correctNums) return [ 'code' => 400, 'info' => 'Value \'nums\' is NOT comma separate numbers'];
 	
-	return false; // 200 OK
-
-	// Option: without additional informaton about invalid request 
-	// if($methodGet && $correctNums && $correctUri) return false;
-	// return $correctUri ? 400 : 404;	
+	return false; // 200 OK	
 }
 
 // HTML OUTPUT FUNCTIONS //////////////////////////////////////////////////////////////////////////
-
- function outputHTML(string $responseBody):void {
+ /**
+  * @param string $responseBody
+  * 
+  * @return void
+  */
+ function outputHTML(string $responseBody) : void {
 
 	// send response for right headers list view on the HTML page 
 	flush();
@@ -87,7 +87,7 @@ function checkRequestCorrectness(string|bool $nums) : bool|array {
 }
 
 /**
- * Output the user`s request uncluding some superglobals with some decorative elements
+ * Output the user`s request uncluding some decorative elements
  * 
  * @return void
  */
@@ -106,13 +106,12 @@ function outputRequest() : void {
 	if($body) echo '<br>' . $body;
 }
 
-
 /**
- * @param array $responseDraft
+ * @param bool|string $body
  * 
  * @return void
  */
-function outputResponse($body) : void {
+function outputResponse(bool|string $body) : void {
 	$code = http_response_code();
 	echo $_SERVER['SERVER_PROTOCOL'] . ' ' . $code . ' ' . getResponseStatusMessage($code) . '<br>';
 	
@@ -131,7 +130,6 @@ function outputResponse($body) : void {
 function getResponseStatusMessage(int $statusCode) : string {
     return RESPONSE_DATA[$statusCode]['statusMessage'];
 }
-
 
 /**
  * Outputs key and its value in a nice separate line 
