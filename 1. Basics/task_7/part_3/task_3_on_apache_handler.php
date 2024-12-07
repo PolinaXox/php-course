@@ -18,9 +18,8 @@ processHttpRequest();
  * @return void
  */
 function processHttpRequest() : void {
-	$nums = testInputValue($_GET['nums'] ?? false);
+	$nums = makeInputDataSafe($_GET['nums'] ?? false);
 	$invalidRequest = checkRequestCorrectness($nums);
-	$isHTML = preg_match('#html#', $_SERVER['HTTP_ACCEPT'] ?? '');
 	
 	if($invalidRequest) {
 		http_response_code($invalidRequest['code']);
@@ -28,7 +27,8 @@ function processHttpRequest() : void {
 	}
 	
 	$responseBody = $invalidRequest ? ($invalidRequest['info'] ?? false) : array_sum(explode(',', $nums));	
-	
+	$isHTML = preg_match('#html#', $_SERVER['HTTP_ACCEPT'] ?? '');
+
 	if($responseBody && !$isHTML) echo $responseBody;
 	
 	if($isHTML) outputHTML($responseBody);
@@ -43,19 +43,24 @@ function processHttpRequest() : void {
  * @return bool|array
  */
 function checkRequestCorrectness(string|bool $nums) : bool|array {
-	$methodGet = (($_SERVER['REQUEST_METHOD'] ?? null) === 'GET') ? true : false;				// 400
-	$correctUri = preg_match('#^/sum#', $_SERVER['REQUEST_URI'] ?? '');		// 404
-	$correctNums = preg_match('#^(\d+,?)+$#', $nums);							// 400
-	
+
+	// 400
+	$methodGet = (($_SERVER['REQUEST_METHOD'] ?? null) === 'GET') ? true : false;
 	if(!$methodGet) return ['code' => 400, 'info' => 'Request method is invalid. The method GET is needed.'];
 
+	// 404
+	$correctUri = preg_match('#^/sum#', $_SERVER['REQUEST_URI'] ?? '');
 	if(!$correctUri) return ['code' => 404, 'info' => 'Not found. URI is invalid.'];
 
+	// 400
 	if(!$nums) return ['code' => 400, 'info' => 'Value \'nums\' is absent.'];
-	
+
+	// 400
+	$correctNums = preg_match('#^(\d+,?)+$#', $nums);
 	if(!$correctNums) return [ 'code' => 400, 'info' => 'Value \'nums\' is NOT comma separate numbers'];
 	
-	return false; // 200 OK	
+	// 200 OK
+	return false; 	
 }
 
 // HTML OUTPUT FUNCTIONS //////////////////////////////////////////////////////////////////////////
@@ -94,15 +99,15 @@ function checkRequestCorrectness(string|bool $nums) : bool|array {
 function outputRequest() : void {
 	
 	// request line
-	echo testInputValue(apache_lookup_uri($_SERVER['REQUEST_URI'])->the_request) . '<br>';
+	echo makeInputDataSafe(apache_lookup_uri($_SERVER['REQUEST_URI'])->the_request) . '<br>';
 
 	// headers
 	$headers = getallheaders();
-	array_walk($headers, 'testInputValueByReference');
+	array_walk($headers, 'makeInputDataSafeByReference');
 	array_walk($headers, 'printKeyAndValue');
 
 	// body
-	$body = testInputValue(file_get_contents('php://input'));
+	$body = makeInputDataSafe(file_get_contents('php://input'));
 	if($body) echo '<br>' . $body;
 }
 
@@ -153,7 +158,7 @@ function printKeyAndValue(string &$value, string $key) : void {
  * 
  * @return void
  */
- function testInputValueByReference(string &$data) : void { //
+ function makeInputDataSafeByReference(string &$data) : void { //
 	$data = trim($data);
 	$data = stripslashes($data);
 	$data = htmlspecialchars($data);
@@ -166,7 +171,7 @@ function printKeyAndValue(string &$value, string $key) : void {
  * 
  * @return string
  */
- function testInputValue(string $data) : string {
-	testInputValueByReference($data);
+ function makeInputDataSafe(string $data) : string {
+	makeInputDataSafeByReference($data);
 	return $data;
 }
