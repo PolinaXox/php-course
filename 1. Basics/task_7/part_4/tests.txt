@@ -1,0 +1,76 @@
+# OK (and for invalid file)
+
+POST /api/checkLoginAndPassword HTTP/1.1
+Accept: */*
+Content-Type: application/x-www-form-urlencoded
+User-Agent: Mozilla/4.0
+Content-Length: 35
+
+login=student&password=12345
+----------------------------------------------------------
+
+# INVALID METHOD
+
+GET /api/checkLoginAndPassword HTTP/1.1
+Accept: */*
+Content-Type: application/x-www-form-urlencoded
+User-Agent: Mozilla/4.0
+Content-Length: 35
+
+login=student&password=12345
+----------------------------------------------------------
+
+# INVALID URI
+
+POST ###/api/checkLoginAndPassword HTTP/1.1
+Accept: */*
+Content-Type: application/x-www-form-urlencoded
+User-Agent: Mozilla/4.0
+Content-Length: 35
+
+login=student&password=12345
+----------------------------------------------------------
+
+# INVALID Content-Type
+
+POST /api/checkLoginAndPassword HTTP/1.1
+Accept: */*
+Content-Type: ###application/x-www-form-urlencoded
+User-Agent: Mozilla/4.0
+Content-Length: 35
+
+login=student&password=12345
+----------------------------------------------------------
+
+# INVALID body
+
+POST /api/checkLoginAndPassword HTTP/1.1
+Accept: */*
+Content-Type: application/x-www-form-urlencoded
+User-Agent: Mozilla/4.0
+Content-Length: 35
+
+login*=student&password=12345
+----------------------------------------------------------
+
+# INVALID login
+
+POST /api/checkLoginAndPassword HTTP/1.1
+Accept: */*
+Content-Type: application/x-www-form-urlencoded
+User-Agent: Mozilla/4.0
+Content-Length: 35
+
+login=student#&password=12345
+----------------------------------------------------------
+
+# INVALID password
+
+POST /api/checkLoginAndPassword HTTP/1.1
+Accept: */*
+Content-Type: application/x-www-form-urlencoded
+User-Agent: Mozilla/4.0
+Content-Length: 35
+
+login=student&password=1***5
+----------------------------------------------------------
