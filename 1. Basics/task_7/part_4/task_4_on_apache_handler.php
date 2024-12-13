@@ -184,26 +184,3 @@ function getStringContentAsPairsArray($str, $delim1, $delim2) : array {
 	makeInputDataSafeByReference($data);
 	return $data;
 }
-
-/*
-++ 1. переадресація на серевере + перевантаження
-
-++ 2. wrong uri -> помилка як тут
-
-++ 3. wrong Content-Type -> (розібратися як його встановлювати...) -> яка помилка??? як у попердній 4-ій
-
-++ 4. wrong method ??? (подивитися попередню роботу...)
-
-++ 5. відсутність body??? (подивитися попередню роботу...)
-
-++ 6. є пара логін + пароль -> 200 OK + body: <h1 style='color:green'>FOUND</h1>
-
-++ 7. немає пари логін + пароль -> (подивитися попередню роботу...)
-
-++ 8. Якщо файлу passwords.txt немає -> 500 Internal Server Error
-
-9. спробувати переадресацію на сторінки з помилками
-
-10. спробувати використати header Location
-
-*/
