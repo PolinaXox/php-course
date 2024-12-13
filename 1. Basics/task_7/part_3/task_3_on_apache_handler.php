@@ -44,13 +44,11 @@ function processHttpRequest() : void {
  */
 function checkRequestCorrectness(string|bool $nums) : bool|array {
 
-	//$methodGet = (($_SERVER['REQUEST_METHOD'] ?? null) === 'GET') ? true : false;
 	// 400 if the request method is not GET 
 	if(($_SERVER['REQUEST_METHOD'] ?? null) !== 'GET') {
 		return ['code' => 400, 'info' => 'Request method is invalid. The method GET is needed.'];
 	}
 
-	//$correctUri = preg_match('#^/sum#', $_SERVER['REQUEST_URI'] ?? '');
 	// 404 if request uri doesn't start with 'sum'
 	if(!preg_match('#^/sum#', $_SERVER['REQUEST_URI'] ?? '')) {
 		return ['code' => 404, 'info' => 'Not found. URI is invalid.'];
@@ -60,7 +58,6 @@ function checkRequestCorrectness(string|bool $nums) : bool|array {
 	if(!$nums) return ['code' => 400, 'info' => 'Value \'nums\' is absent.'];
 
 	// 400
-	//$correctNums = preg_match('#^(\d+,?)+$#', $nums);
 	if(!preg_match('#^(\d+,?)+$#', $nums)) {
 		return [ 'code' => 400, 'info' => 'Value \'nums\' is NOT comma separate numbers'];
 	}
@@ -179,6 +176,6 @@ function printKeyAndValue(string &$value, string $key) : void {
  */
  function makeInputDataSafe(string $data) : string {
 	makeInputDataSafeByReference($data);
-	
+
 	return $data;
 }
