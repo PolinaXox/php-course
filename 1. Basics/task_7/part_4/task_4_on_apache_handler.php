@@ -34,9 +34,9 @@ function processHttpRequest() : void {
  * @return void
  */
 function checkRequestMethod() : void {
-	$methodPost = (($_SERVER['REQUEST_METHOD'] ?? null) === 'POST') ? true : false;
+	//$methodPost = (($_SERVER['REQUEST_METHOD'] ?? null) === 'POST') ? true : false;
 
-	if($methodPost) return;
+	if(($_SERVER['REQUEST_METHOD'] ?? null) === 'POST') return;
 
     throw new Exception('Request method is invalid. The method POST is needed.', 400);
 }
@@ -46,9 +46,9 @@ function checkRequestMethod() : void {
  * @return void
  */
 function checkRequestUri() : void {
-	$correctUri = preg_match('#^/api/checkLoginAndPassword$#', $_SERVER['REQUEST_URI'] ?? '');		
+	//$correctUri = preg_match('#^/api/checkLoginAndPassword$#', $_SERVER['REQUEST_URI'] ?? '');		
     
-	if($correctUri) return;
+	if(preg_match('#^/api/checkLoginAndPassword$#', $_SERVER['REQUEST_URI'] ?? '')) return;
 
     throw new Exception('URI is invalid.', 404);
 }
@@ -58,10 +58,10 @@ function checkRequestUri() : void {
  * @return void
  */
 function checkRequestContentTypeValue() : void {
-	$headerContentType = apache_request_headers()['Content-Type'] ?? '';
-	$correctContentType = preg_match('#\bapplication/x-www-form-urlencoded\b#i', $headerContentType);
+	//$headerContentType = apache_request_headers()['Content-Type'] ?? '';
+	//$correctContentType = preg_match('#\bapplication/x-www-form-urlencoded\b#i', $headerContentType);
 
-   	if($correctContentType) return;
+   	if(preg_match('#\bapplication/x-www-form-urlencoded\b#i', apache_request_headers()['Content-Type'] ?? '')) return;
     
     throw new Exception('Header\'s \'Content-Type\' value is invalid.', 400);
 }
@@ -182,5 +182,6 @@ function getStringContentAsPairsArray($str, $delim1, $delim2) : array {
  */
  function makeInputDataSafe(string $data) : string {
 	makeInputDataSafeByReference($data);
+	
 	return $data;
 }
