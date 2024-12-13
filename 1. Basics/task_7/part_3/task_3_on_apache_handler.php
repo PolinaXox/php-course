@@ -44,20 +44,26 @@ function processHttpRequest() : void {
  */
 function checkRequestCorrectness(string|bool $nums) : bool|array {
 
-	// 400
-	$methodGet = (($_SERVER['REQUEST_METHOD'] ?? null) === 'GET') ? true : false;
-	if(!$methodGet) return ['code' => 400, 'info' => 'Request method is invalid. The method GET is needed.'];
+	//$methodGet = (($_SERVER['REQUEST_METHOD'] ?? null) === 'GET') ? true : false;
+	// 400 if the request method is not GET 
+	if(($_SERVER['REQUEST_METHOD'] ?? null) !== 'GET') {
+		return ['code' => 400, 'info' => 'Request method is invalid. The method GET is needed.'];
+	}
 
-	// 404
-	$correctUri = preg_match('#^/sum#', $_SERVER['REQUEST_URI'] ?? '');
-	if(!$correctUri) return ['code' => 404, 'info' => 'Not found. URI is invalid.'];
+	//$correctUri = preg_match('#^/sum#', $_SERVER['REQUEST_URI'] ?? '');
+	// 404 if request uri doesn't start with 'sum'
+	if(!preg_match('#^/sum#', $_SERVER['REQUEST_URI'] ?? '')) {
+		return ['code' => 404, 'info' => 'Not found. URI is invalid.'];
+	}
 
 	// 400
 	if(!$nums) return ['code' => 400, 'info' => 'Value \'nums\' is absent.'];
 
 	// 400
-	$correctNums = preg_match('#^(\d+,?)+$#', $nums);
-	if(!$correctNums) return [ 'code' => 400, 'info' => 'Value \'nums\' is NOT comma separate numbers'];
+	//$correctNums = preg_match('#^(\d+,?)+$#', $nums);
+	if(!preg_match('#^(\d+,?)+$#', $nums)) {
+		return [ 'code' => 400, 'info' => 'Value \'nums\' is NOT comma separate numbers'];
+	}
 	
 	// 200 OK
 	return false; 	
@@ -173,5 +179,6 @@ function printKeyAndValue(string &$value, string $key) : void {
  */
  function makeInputDataSafe(string $data) : string {
 	makeInputDataSafeByReference($data);
+	
 	return $data;
 }
