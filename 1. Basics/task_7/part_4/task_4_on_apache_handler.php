@@ -21,8 +21,7 @@ function processHttpRequest() : void {
 
 		validateUser($loginAndPasswordPair['login'], $loginAndPasswordPair['password']);
 		echo '<h1 style=\'color:green\'>FOUND</h1>';
-    }
-    catch(Exception $ex) {
+    } catch(Exception $ex) {
 		http_response_code($ex->getCode());
         echo '<p>' . $ex->getMessage() . '</p>';
     };	
@@ -34,8 +33,6 @@ function processHttpRequest() : void {
  * @return void
  */
 function checkRequestMethod() : void {
-	//$methodPost = (($_SERVER['REQUEST_METHOD'] ?? null) === 'POST') ? true : false;
-
 	if(($_SERVER['REQUEST_METHOD'] ?? null) === 'POST') return;
 
     throw new Exception('Request method is invalid. The method POST is needed.', 400);
@@ -45,9 +42,7 @@ function checkRequestMethod() : void {
  * @throws Exception
  * @return void
  */
-function checkRequestUri() : void {
-	//$correctUri = preg_match('#^/api/checkLoginAndPassword$#', $_SERVER['REQUEST_URI'] ?? '');		
-    
+function checkRequestUri() : void {		
 	if(preg_match('#^/api/checkLoginAndPassword$#', $_SERVER['REQUEST_URI'] ?? '')) return;
 
     throw new Exception('URI is invalid.', 404);
@@ -58,9 +53,6 @@ function checkRequestUri() : void {
  * @return void
  */
 function checkRequestContentTypeValue() : void {
-	//$headerContentType = apache_request_headers()['Content-Type'] ?? '';
-	//$correctContentType = preg_match('#\bapplication/x-www-form-urlencoded\b#i', $headerContentType);
-
    	if(preg_match('#\bapplication/x-www-form-urlencoded\b#i', apache_request_headers()['Content-Type'] ?? '')) return;
     
     throw new Exception('Header\'s \'Content-Type\' value is invalid.', 400);
@@ -71,7 +63,7 @@ function checkRequestContentTypeValue() : void {
  * @return array
  */
 function validateLoginAndPassword(): array {
-	$login = makeInputDataSafe($_POST['login'] ?? false);
+	$login = sanitizeInput($_POST['login'] ?? false);
 
 	if($login === false){
 		throw new Exception('Login field is absent', 404);
@@ -81,7 +73,7 @@ function validateLoginAndPassword(): array {
 		throw new Exception('Login value is absent(empty field)', 404);
 	}
 
-	$password = makeInputDataSafe($_POST['password'] ?? false);
+	$password = sanitizeInput($_POST['password'] ?? false);
 	
 	if($password === false){
 		throw new Exception('Password field is absent', 404);
@@ -125,7 +117,6 @@ function validateUser(string $login, string $password) : void {
     throw new Exception('User not found. Would you like to register?', 404);
 }
 
-
 // FILES PROCESSING FUNCTIONS ////////////////////////////////////////////////////
 /**
  * @param string $filename
@@ -167,7 +158,7 @@ function getStringContentAsPairsArray($str, $delim1, $delim2) : array {
  * 
  * @return void
  */
- function makeInputDataSafeByReference(string &$data) : void { //
+ function sanitizeInputByReference(string &$data) : void { //
 	$data = trim($data);
 	$data = stripslashes($data);
 	$data = htmlspecialchars($data);
@@ -180,8 +171,8 @@ function getStringContentAsPairsArray($str, $delim1, $delim2) : array {
  * 
  * @return string
  */
- function makeInputDataSafe(string $data) : string {
-	makeInputDataSafeByReference($data);
+ function sanitizeInput(string $data) : string {
+	sanitizeInputByReference($data);
 	
 	return $data;
 }
