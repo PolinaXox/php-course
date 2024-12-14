@@ -11,7 +11,7 @@ processHttpRequest();
  * @return void
  */
 function processHttpRequest() : void {
-	try{
+	try {
         checkRequestMethod();
         checkRequestUri();
         checkRequestContentTypeValue();
@@ -33,7 +33,9 @@ function processHttpRequest() : void {
  * @return void
  */
 function checkRequestMethod() : void {
-	if(($_SERVER['REQUEST_METHOD'] ?? null) === 'POST') return;
+	if(($_SERVER['REQUEST_METHOD'] ?? null) === 'POST') {
+		return;
+	}
 
     throw new Exception('Request method is invalid. The method POST is needed.', 400);
 }
@@ -43,7 +45,9 @@ function checkRequestMethod() : void {
  * @return void
  */
 function checkRequestUri() : void {		
-	if(preg_match('#^/api/checkLoginAndPassword$#', $_SERVER['REQUEST_URI'] ?? '')) return;
+	if(preg_match('#^/api/checkLoginAndPassword$#', $_SERVER['REQUEST_URI'] ?? '')) {
+		return;
+	}
 
     throw new Exception('URI is invalid.', 404);
 }
@@ -53,7 +57,9 @@ function checkRequestUri() : void {
  * @return void
  */
 function checkRequestContentTypeValue() : void {
-   	if(preg_match('#\bapplication/x-www-form-urlencoded\b#i', apache_request_headers()['Content-Type'] ?? '')) return;
+   	if(preg_match('#\bapplication/x-www-form-urlencoded\b#i', apache_request_headers()['Content-Type'] ?? '')) {
+		return;
+	}
     
     throw new Exception('Header\'s \'Content-Type\' value is invalid.', 400);
 }
@@ -65,21 +71,21 @@ function checkRequestContentTypeValue() : void {
 function validateLoginAndPassword(): array {
 	$login = sanitizeInput($_POST['login'] ?? false);
 
-	if($login === false){
+	if($login === false) {
 		throw new Exception('Login field is absent', 404);
 	}
 
-	if(empty($login)){
+	if(empty($login)) {
 		throw new Exception('Login value is absent(empty field)', 404);
 	}
 
 	$password = sanitizeInput($_POST['password'] ?? false);
 	
-	if($password === false){
+	if($password === false) {
 		throw new Exception('Password field is absent', 404);
 	}
 	
-	if(empty($password)){
+	if(empty($password)) {
 		throw new Exception('Password value is absent(empty field)', 404);
 	}
 
@@ -92,7 +98,9 @@ function validateLoginAndPassword(): array {
  * @return void
  */
 function checkFileExistance(string $fileName) : void {
-    if(file_exists($fileName)) return;
+    if(file_exists($fileName)) {
+		return;
+	}
     
     throw new Exception('File ' . $fileName . ' doesn`t exist', 500);
 }
@@ -107,7 +115,9 @@ function validateUser(string $login, string $password) : void {
     $logAndPassPairsAsArr = getFileContentAsPairsArray(FILE_NAME, PHP_EOL, ':');
 
     foreach($logAndPassPairsAsArr as $log => $pass) {
-        if($log === $login and $pass === $password) return;
+        if($log === $login and $pass === $password) {
+			return;
+		}
               
 		if($log === $login) {
             throw new Exception('Password didn`t match. Fogot password?', 404);        
@@ -158,7 +168,7 @@ function getStringContentAsPairsArray($str, $delim1, $delim2) : array {
  * 
  * @return void
  */
- function sanitizeInputByReference(string &$data) : void { //
+ function sanitizeInputByReference(string &$data) : void {
 	$data = trim($data);
 	$data = stripslashes($data);
 	$data = htmlspecialchars($data);
