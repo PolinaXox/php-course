@@ -1,0 +1,24 @@
+.formItem {
+	padding : 10px 10px;
+}
+
+.edgeCases {
+	color : red;
+	padding : 10px 10px;
+	border : none;
+}
+.edgeCases legend {
+	font-weight: bold;	 
+}
+
+.chBox input::before {
+	content: '';
+	background: #fff;
+  	display: block;
+  	width: 10px;
+  	height: 10px;
+  	border: 1px solid black;
+  }
+.chBox input:checked::before {
+	background-color: red;
+}
