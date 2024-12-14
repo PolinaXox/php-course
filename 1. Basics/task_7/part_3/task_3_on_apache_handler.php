@@ -18,7 +18,7 @@ processHttpRequest();
  * @return void
  */
 function processHttpRequest() : void {
-	$nums = makeInputDataSafe($_GET['nums'] ?? false);
+	$nums = sanitizeInput($_GET['nums'] ?? false);
 	$invalidRequest = checkRequestCorrectness($nums);
 	
 	if($invalidRequest) {
@@ -102,15 +102,15 @@ function checkRequestCorrectness(string|bool $nums) : bool|array {
 function outputRequest() : void {
 	
 	// request line
-	echo makeInputDataSafe(apache_lookup_uri($_SERVER['REQUEST_URI'])->the_request) . '<br>';
+	echo sanitizeInput(apache_lookup_uri($_SERVER['REQUEST_URI'])->the_request) . '<br>';
 
 	// headers
 	$headers = getallheaders();
-	array_walk($headers, 'makeInputDataSafeByReference');
+	array_walk($headers, 'sanitizeInputByReference');
 	array_walk($headers, 'printKeyAndValue');
 
 	// body
-	$body = makeInputDataSafe(file_get_contents('php://input'));
+	$body = sanitizeInput(file_get_contents('php://input'));
 	if($body) echo '<br>' . $body;
 }
 
@@ -161,7 +161,7 @@ function printKeyAndValue(string &$value, string $key) : void {
  * 
  * @return void
  */
- function makeInputDataSafeByReference(string &$data) : void { //
+ function sanitizeInputByReference(string &$data) : void { //
 	$data = trim($data);
 	$data = stripslashes($data);
 	$data = htmlspecialchars($data);
@@ -174,8 +174,8 @@ function printKeyAndValue(string &$value, string $key) : void {
  * 
  * @return string
  */
- function makeInputDataSafe(string $data) : string {
-	makeInputDataSafeByReference($data);
+ function sanitizeInput(string $data) : string {
+	sanitizeInputByReference($data);
 
 	return $data;
 }
