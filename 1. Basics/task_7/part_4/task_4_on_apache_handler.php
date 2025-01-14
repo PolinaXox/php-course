@@ -16,10 +16,10 @@ function processHttpRequest() : void {
 		validateRequest();
 		userAuthorization();
 		echo '<h1 style=\'color:green\'>FOUND</h1>';
-    } catch(Exception $ex) {
+	} catch(Exception $ex) {
 		http_response_code($ex->getCode());
-        echo '<p>' . $ex->getMessage() . '</p>';
-    };	
+		echo '<p>' . $ex->getMessage() . '</p>';
+	};
 }
 
 // REQUEST PROCESS FUNCTIONS. VALIDATON FUNCTIONS /////////////////////////////////////////////////
@@ -42,8 +42,8 @@ function checkRequestMethod() : void {
 	if(($_SERVER['REQUEST_METHOD'] ?? null) === 'POST') {
 		return;
 	}
-
-    throw new Exception('Request method is invalid. The method POST is needed.', 400);
+	
+	throw new Exception('Request method is invalid. The method POST is needed.', 400);
 }
 
 /**
@@ -54,8 +54,8 @@ function checkRequestUri() : void {
 	if(preg_match('#^/api/checkLoginAndPassword$#', $_SERVER['REQUEST_URI'] ?? '')) {
 		return;
 	}
-
-    throw new Exception('URI is invalid.', 404);
+	
+	throw new Exception('URI is invalid.', 404);
 }
 
 /**
@@ -63,11 +63,11 @@ function checkRequestUri() : void {
  * @return void
  */
 function checkRequestContentTypeValue() : void {
-   	if(preg_match('#\bapplication/x-www-form-urlencoded\b#i', apache_request_headers()['Content-Type'] ?? '')) {
+	if(preg_match('#\bapplication/x-www-form-urlencoded\b#i', apache_request_headers()['Content-Type'] ?? '')) {
 		return;
 	}
-    
-    throw new Exception('Header\'s \'Content-Type\' value is invalid.', 400);
+	
+	throw new Exception('Header\'s \'Content-Type\' value is invalid.', 400);
 }
 
 /**
@@ -95,7 +95,7 @@ function userAuthorization() : void {
 	$file = fopen(FILE_NAME, 'r');
 	$login = sanitizeInput($_POST['login'] ?? false);
 	
-	while (!feof($file)) {
+	while(!feof($file)) {
 		preg_match('#^(.*):(.*)'. PHP_EOL .'$#', fgets($file), $logAndPass);
 
 		// feof or login didn't match
@@ -127,11 +127,11 @@ function userAuthorization() : void {
  * @return void
  */
 function checkFileExistance(string $fileName) : void {
-    if(file_exists($fileName)) {
+	if(file_exists($fileName)) {
 		return;
 	}
-    
-    throw new Exception('File ' . $fileName . ' doesn`t exist', 500);
+	
+	throw new Exception('File ' . $fileName . ' doesn`t exist', 500);
 }
 
 // CHECK INPUT DATA FUNCTIONS /////////////////////////////////////////////////////////////////////
@@ -144,7 +144,7 @@ function checkFileExistance(string $fileName) : void {
  * 
  * @return void
  */
- function sanitizeInputByReference(string &$data) : void {
+function sanitizeInputByReference(string &$data) : void {
 	$data = trim($data);
 	$data = stripslashes($data);
 	$data = htmlspecialchars($data);
@@ -157,7 +157,7 @@ function checkFileExistance(string $fileName) : void {
  * 
  * @return string
  */
- function sanitizeInput(string $data) : string {
+function sanitizeInput(string $data) : string {
 	sanitizeInputByReference($data);
 	
 	return $data;
