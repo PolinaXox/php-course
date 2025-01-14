@@ -12,20 +12,73 @@ processHttpRequest();
  */
 function processHttpRequest() : void {
 	try {
-        checkRequestMethod();
+		validateRequest();
+		/*checkRequestMethod();
         checkRequestUri();
         checkRequestContentTypeValue();
+*/
+		userAutorization();
 
-		$loginAndPasswordPair = validateLoginAndPassword();
-        checkFileExistance(FILE_NAME);
-
-		validateUser($loginAndPasswordPair['login'], $loginAndPasswordPair['password']);
+		//sanitizeLogin();
+		//$loginAndPasswordPair = validateLoginAndPassword();
+		//validateUser($loginAndPasswordPair['login'], $loginAndPasswordPair['password']);
 		echo '<h1 style=\'color:green\'>FOUND</h1>';
     } catch(Exception $ex) {
 		http_response_code($ex->getCode());
         echo '<p>' . $ex->getMessage() . '</p>';
     };	
 }
+
+////////////////////////////////////////////////////////////s
+
+function validateRequest() : void {
+	checkRequestMethod();
+	checkRequestUri();
+	checkRequestContentTypeValue();
+	checkAuthentication();
+}
+
+function checkAuthentication() : void {
+	
+	// authentification OK: all fields exist
+	if(($_POST['login'] ?? false) && ($_POST['password'] ?? false)) {
+		return;
+	}
+
+	throw new Exception('Authentification failed.', 400);
+}
+
+
+function userAutorization() : void {
+	checkFileExistance(FILE_NAME);
+	$file = fopen(FILE_NAME, 'r');
+	$login = sanitizeInput($_POST['login'] ?? false);
+	
+	while (!feof($file)) {
+
+		preg_match('#^(.*):(.*)'. PHP_EOL .'$#', fgets($file), $logAndPass);
+
+		// feof or login didn't match
+		if(empty($logAndPass) || $logAndPass[1] !== $login) {
+			continue;
+		}
+
+		fclose($file);
+		
+		// log - ok, pass - ok
+		if($logAndPass[2] === sanitizeInput($_POST['password'] ?? false)) {
+			return;
+		}
+
+		// log - ok, pass - NOT ok
+		throw new Exception('Authorization failed. Fogot password?', 401);
+	}
+
+	// login not found
+	fclose($file);
+	throw new Exception('User is not found. Would you like to register?', 404);
+}
+
 
 // REQUEST PROCESS FUNCTIONS. VALIDATON FUNCTIONS /////////////////////////////////////////////////
 /**
@@ -52,6 +105,7 @@ function checkRequestUri() : void {
     throw new Exception('URI is invalid.', 404);
 }
 
+
 /**
  * @throws Exception
  * @return void
@@ -64,20 +118,26 @@ function checkRequestContentTypeValue() : void {
     throw new Exception('Header\'s \'Content-Type\' value is invalid.', 400);
 }
 
+
+
+
 /**
  * @throws Exception
  * @return array
  */
+/*
 function validateLoginAndPassword(): array {
 	$login = sanitizeInput($_POST['login'] ?? false);
 
-	if($login === false) {
-		throw new Exception('Login field is absent', 404);
+	// Field 'login' is absent or it's empty
+	if($login == false) {
+		throw new Exception('Something wrong with field \'login\'. Turn to the administrator.', 400);
 	}
 
-	if(empty($login)) {
-		throw new Exception('Login value is absent(empty field)', 404);
-	}
+	// Field 'login' is empty
+	//if(empty($login)) {
+	//	throw new Exception('Login value is absent(empty field)', 404);
+	//}
 
 	$password = sanitizeInput($_POST['password'] ?? false);
 	
@@ -91,6 +151,7 @@ function validateLoginAndPassword(): array {
 
 	return ['login' => $login, 'password' => $password,];
 }
+	*/
 
 /**
  * @param string $fileName
@@ -111,8 +172,22 @@ function checkFileExistance(string $fileName) : void {
  * @throws Exception
  * @return void
  */
+/*
 function validateUser(string $login, string $password) : void {
-    $logAndPassPairsAsArr = getFileContentAsPairsArray(FILE_NAME, PHP_EOL, ':');
+    
+	// перевірити логін, що прийшов, на допустимість
+	// перевірити пароль, що прийшов, на допустимість 
+
+	// відкрити файл (мій файл ідеален)
+	// зчитати рядок
+	// розділити його на логін і пароль
+	// перевірити логін на співпадіння 
+	// перевірити пароль на співпадіння
+	// якщо пароль і логін - ок -> закрити файл і return
+	// якщо пароль і логін not ок -> закрити файл перед поверненням
+
+	
+	$logAndPassPairsAsArr = getFileContentAsPairsArray(FILE_NAME, PHP_EOL, ':');
 
     foreach($logAndPassPairsAsArr as $log => $pass) {
         if($log === $login and $pass === $password) {
@@ -126,6 +201,7 @@ function validateUser(string $login, string $password) : void {
 
     throw new Exception('User not found. Would you like to register?', 404);
 }
+	*/
 
 // FILES PROCESSING FUNCTIONS ////////////////////////////////////////////////////
 /**
@@ -135,9 +211,11 @@ function validateUser(string $login, string $password) : void {
  * 
  * @return array
  */
+/*
 function getFileContentAsPairsArray($filename, $delim1, $delim2) : array {
     return getStringContentAsPairsArray(file_get_contents($filename), $delim1, $delim2);
 }
+	*/
 
 // STRINGS PROCESSING FUNCTIONS ////////////////////////////////////////////////////
 /**
@@ -147,6 +225,7 @@ function getFileContentAsPairsArray($filename, $delim1, $delim2) : array {
  * 
  * @return array
  */
+/*
 function getStringContentAsPairsArray($str, $delim1, $delim2) : array {
     $arr = array_filter(explode($delim1, $str));
     $pairsAsArr = [];
@@ -158,6 +237,7 @@ function getStringContentAsPairsArray($str, $delim1, $delim2) : array {
     
     return array_filter($pairsAsArr);
 }
+*/
 
 // CHECK INPUT DATA FUNCTIONS //////////////////////////////////////////////////
 /**
