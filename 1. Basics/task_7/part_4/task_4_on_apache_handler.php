@@ -43,7 +43,7 @@ function checkRequestMethod() : void {
 		return;
 	}
 	
-	throw new Exception('Request method is invalid. The method POST is needed.', 400);
+	throw new Exception('Request method is invalid111. The method POST is needed.', 400);
 }
 
 /**
@@ -96,17 +96,17 @@ function userAuthorization() : void {
 	$login = sanitizeInput($_POST['login'] ?? false);
 	
 	while(!feof($file)) {
-		preg_match('#^(.*):(.*)'. PHP_EOL .'$#', fgets($file), $logAndPass);
-
+		$logAndPass = explode(":", trim(fgets($file)), 2);
+	
 		// feof or login didn't match
-		if(empty($logAndPass) || $logAndPass[1] !== $login) {
+		if(empty($logAndPass) || $logAndPass[0] !== $login) {
 			continue;
 		}
 
 		fclose($file);
 		
 		// log - ok, pass - ok
-		if($logAndPass[2] === sanitizeInput($_POST['password'] ?? false)) {
+		if($logAndPass[1] === sanitizeInput($_POST['password'] ?? false)) {
 			return;
 		}
 
