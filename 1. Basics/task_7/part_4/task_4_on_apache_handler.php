@@ -14,7 +14,7 @@ processHttpRequest();
 function processHttpRequest() : void {
 	try {
 		validateRequest();
-		userAuthorization();
+		authenticateUser();
 		echo '<h1 style=\'color:green\'>FOUND</h1>';
 	} catch(Exception $ex) {
 		http_response_code($ex->getCode());
@@ -31,7 +31,7 @@ function validateRequest() : void {
 	checkRequestMethod();
 	checkRequestUri();
 	checkRequestContentTypeValue();
-	checkAuthentication();
+	checkRequestBody();
 }
 
 /**
@@ -43,7 +43,7 @@ function checkRequestMethod() : void {
 		return;
 	}
 	
-	throw new Exception('Request method is invalid111. The method POST is needed.', 400);
+	throw new Exception('Request method is invalid. The method POST is needed.', 400);
 }
 
 /**
@@ -74,23 +74,23 @@ function checkRequestContentTypeValue() : void {
  * @throws Exception
  * @return void
  */
-function checkAuthentication() : void {
+function checkRequestBody() : void {
 	
-	// authentification OK: all fields exist
-	if(($_POST['login'] ?? false) && ($_POST['password'] ?? false)) {
+	// if all required fields exist and login has some legal content
+	if(!empty(trim($_POST['login'] ?? false)) && ($_POST['password'] ?? false)) {
 		return;
 	}
 
-	throw new Exception('Authentification failed.', 400);
+	throw new Exception('Validation failed.', 400);
 }
 
-// REQUEST PROCESS FUNCTIONS. AUTHORIZATION FUNCTIONS ////////////////////////////////////////////////////////
+// REQUEST PROCESS FUNCTIONS. AUTHENTICATION FUNCTIONS ////////////////////////////////////////////////////////
 
 /**
  * @throws Exception
  * @return void
  */
-function userAuthorization() : void {
+function authenticateUser() : void {
 	checkFileExistance(FILE_NAME);
 	$file = fopen(FILE_NAME, 'r');
 	$login = sanitizeInput($_POST['login'] ?? false);
@@ -111,7 +111,7 @@ function userAuthorization() : void {
 		}
 
 		// log - ok, pass - NOT ok
-		throw new Exception('Authorization failed. Fogot password?', 401);
+		throw new Exception('Authentication failed. Fogot password?', 401);
 	}
 
 	// login not found
@@ -162,3 +162,6 @@ function sanitizeInput(string $data) : string {
 	
 	return $data;
 }
+
+// userAuth -> authenticateUser()
+// checkAuthentication() -> checkRequestBody()
