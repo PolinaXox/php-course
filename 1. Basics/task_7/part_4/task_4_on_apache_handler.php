@@ -161,11 +161,4 @@ function sanitizeInput(string $data) : string {
 	sanitizeInputByReference($data);
 	
 	return $data;
-<<<<<<< HEAD
 }
-=======
-}
-
-// userAuth -> authenticateUser()
-// checkAuthentication() -> checkRequestBody()
->>>>>>> 983baedd8e6f2a8f8ab667133f3f9856170ac65e
