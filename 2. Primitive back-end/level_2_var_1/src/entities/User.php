@@ -1,6 +1,6 @@
 <?php
 
-require_once (__DIR__ . '/../../vendor/autoload.php');
+require_once(__DIR__ . '/../../vendor/autoload.php');
 
 use UserRegistrationDataValidatorService as Validator;
 
@@ -15,7 +15,7 @@ class User extends DomainObject
     public function __construct(
         private readonly string $login,
         private readonly string $password,
-        ?int                    $id = null
+        protected ?int          $id = null
     )
     {
         parent::__construct($id);
@@ -29,19 +29,24 @@ class User extends DomainObject
      */
     public static function createNewUser(): self
     {
-        $data = Validator::getValidRegistrationData() ;
+        $validator = new Validator();
         return new self(
-            login: $data[RequiredRegistrationData::LOGIN],
-            password: $data[RequiredRegistrationData::PASSWORD]
+            login: $validator->getValidLogin(),
+            password: password_hash($validator->getValidPassword(), PASSWORD_DEFAULT),
         );
     }
 
-    // METHODS. GETTERS
+    /**
+     * @return string
+     */
     public function getLogin(): string
     {
         return $this->login;
     }
 
+    /**
+     * @return string
+     */
     public function getPassword(): string
     {
         return $this->password;

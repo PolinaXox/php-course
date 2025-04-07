@@ -7,7 +7,7 @@ use SanitizerService as Sanitizer;
 abstract class InputDataValidatorService
 {
     protected function __construct(
-        private readonly array $inputRawData
+        protected readonly array $inputRawData
     )
     {
     }
@@ -17,7 +17,7 @@ abstract class InputDataValidatorService
      * @return string
      * @throws Exception
      */
-    protected function getValidValue(string $key): string
+    public function getValidValue(string $key): string
     {
         $this->ensureValueExists($key);
 
@@ -31,8 +31,9 @@ abstract class InputDataValidatorService
      */
     private function ensureValueExists(string $key): void
     {
-        if ($this->inputRawData[$key] === null)
+        if ($this->inputRawData[$key] === null) {
             throw new Exception('Request does NOT contain \'' . $key . '\' field.', 400);
+        }
     }
 
     /**
@@ -42,9 +43,19 @@ abstract class InputDataValidatorService
      */
     private function getSanitizedValue(string $key): string
     {
-        if (empty($sanitizedValue = Sanitizer::sanitizeInputValue($this->inputRawData[$key])))
+        if (empty($sanitizedValue = Sanitizer::sanitizeInputValue($this->inputRawData[$key]))) {
             throw new Exception('Request field \'' . $key . '\' is empty or contains spaces only', 400);
+        }
 
         return $sanitizedValue;
+    }
+
+    /**
+     * @param $key
+     * @return mixed
+     */
+    public function getRawDataField($key): mixed
+    {
+        return $this->inputRawData[$key];
     }
 }

@@ -19,17 +19,4 @@ class ToDoListMapper
     {
         return serialize($toDoList);
     }
-
-    /*
-    static function mapUserToJson(entities\User $user): string {
-        $arr = $user->toArray();
-        $key = $arr['id'];
-        unset($arr['id']);
-        return json_encode([$key => $arr]);
-    }
-
-    static function mapStrDBToArray(string $strDB): array {
-        return self::mapToObject($strDB)->toArray();
-    }
-    */
 }

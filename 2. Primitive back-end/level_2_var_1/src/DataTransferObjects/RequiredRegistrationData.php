@@ -1,5 +1,5 @@
 <?php
-// enum??????????
+
 interface RequiredRegistrationData
 {
     const string LOGIN = 'login';

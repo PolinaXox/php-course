@@ -8,9 +8,8 @@ class RequestDTO
 
     public function __construct()
     {
-        // case-sensitive?????????
-        $this->method = $_SERVER['REQUEST_METHOD'] ?? '';
-        $this->headers = getallheaders();                           // get some () headers???
+        $this->method = $_SERVER['REQUEST_METHOD'] ?? '';     // case-sensitive?????????
+        $this->headers = getallheaders();
         $this->body = file_get_contents('php://input');
     }
 }

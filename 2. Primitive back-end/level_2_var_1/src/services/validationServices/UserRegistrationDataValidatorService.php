@@ -8,30 +8,25 @@ class UserRegistrationDataValidatorService
     extends InputDataValidatorService
     implements RequiredRegistrationData
 {
+    private array $validRegistrationData;
+
+    /**
+     * @throws Exception
+     */
     function __construct()
     {
         parent::__construct(new RegistrationData()->rawInputData);
+        $this->validRegistrationData = $this->getValidRegistrationData();
     }
 
     /**
      * @return array
      * @throws Exception
      */
-    static public function getValidRegistrationData(): array
-    {
-        $validator = new self();
-        return $validator->getValidatedData();
-    }
-
-    /**
-     * @return array
-     * @throws Exception
-     */
-    private function getValidatedData(): array
-    {
+    private function getValidRegistrationData() : array {
         return [
-            self::LOGIN => $this->getValidLogin(),
-            self::PASSWORD => $this->getValidValue(self::PASSWORD),
+            self::LOGIN => $this->getUniqueValidLogin(),
+            self::PASSWORD => parent::getValidValue(self::PASSWORD),
         ];
     }
 
@@ -39,11 +34,25 @@ class UserRegistrationDataValidatorService
      * @return string
      * @throws Exception
      */
-    public function getValidLogin(): string
-    {
-        $login = $this->getValidValue(self::LOGIN);
+    private function getUniqueValidLogin() : string {
+        $login = parent::getValidValue(self::LOGIN);
         $this->ensureUserLoginIsUnique($login);
+
         return $login;
+    }
+
+    /**
+     * @return string
+     */
+    public function getValidLogin() : string {
+        return $this->validRegistrationData[self::LOGIN];
+    }
+
+    /**
+     * @return string
+     */
+    public function getValidPassword() : string {
+        return $this->validRegistrationData[self::PASSWORD];
     }
 
     /**

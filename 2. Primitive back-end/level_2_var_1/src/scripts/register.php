@@ -1,13 +1,22 @@
 <?php
 
-require __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../../vendor/autoload.php';
 
 try {
 
-    RequestValidatorService::validate();
+    // on server
+    RequestValidatorService::validate('POST');
     new UserRegistrationService()->register(User::createNewUser());
 
+    // response to front
+    header('Content-Type: application/json');
+    echo json_encode(['ok' => 'true']);
+
 } catch (Exception $ex) {
+
+    // response to front
     http_response_code($ex->getCode());
-    exit($ex->getMessage());
+    header('Content-Type: application/json');
+    echo json_encode(['exMessage' => $ex->getMessage()]);
+    exit();
 }

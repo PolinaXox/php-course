@@ -5,6 +5,7 @@ require_once (__DIR__ . '/../../vendor/autoload.php');
 abstract class DomainObject
 {
     /**
+     * @param int|null $id
      * @throws Exception
      */
     public function __construct(protected ?int $id = null)
