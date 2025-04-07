@@ -1,25 +1,26 @@
 <?php
 
-require_once (__DIR__ . '/../../../vendor/autoload.php');
+require_once(__DIR__ . '/../../../vendor/autoload.php');
 
-use UserInputAuthenticationDataDTO as AuthenticationData;
+use UserAuthenticationDataValidatorService as Validator;
 
-class UserAuthenticationDataValidatorService
-    extends InputDataValidatorService
-    implements RequiredAuthenticationData
+class UserAuthenticationService
 {
-    function __construct()
+    private Validator $validator;
+
+    private function __construct()
     {
-        parent::__construct(new AuthenticationData()->rawInputData);
+        $this->validator = new Validator();
     }
 
     /**
      * @return User
      * @throws Exception
      */
-    static public function getRegisteredUser(): User {
-        $validator = new self();
-        return $validator->getUserFromDB();
+    static public function getRegisteredUser(): User
+    {
+        $authenticator = new self();
+        return $authenticator->getUserFromDB();
     }
 
     /**
@@ -28,7 +29,7 @@ class UserAuthenticationDataValidatorService
      */
     private function getUserFromDB(): User
     {
-        $user = new UserDAO()->findByLogin($this->getValidValue(self::LOGIN));
+        $user = new UserDAO()->findByLogin($this->validator->getValidLogin());
         $this->ensureUserIsExist($user);
         $this->ensurePasswordMatched($user->getPassword());
         return $user;
@@ -47,13 +48,13 @@ class UserAuthenticationDataValidatorService
     }
 
     /**
-     * @param string $inputPassword
+     * @param string $passwordFromDB
      * @return void
      * @throws Exception
      */
-    private function ensurePasswordMatched(string $inputPassword): void
+    private function ensurePasswordMatched(string $passwordFromDB): void
     {
-        if ($this->getValidValue(self::PASSWORD) !== $inputPassword) {
+        if (!password_verify($this->validator->getValidPassword(), $passwordFromDB)) {
             throw new Exception('Authentication failed. Forgot password?', 400);
         }
     }

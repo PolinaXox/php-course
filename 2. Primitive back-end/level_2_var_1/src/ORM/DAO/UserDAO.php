@@ -88,15 +88,4 @@ class UserDAO
         }
         return $user;
     }
-
-
-    function delete(int $id): bool
-    {
-        return false;
-    }
-
-    function update(int $id, User $user): bool
-    {
-        return false;
-    }
 }

@@ -10,7 +10,6 @@ class UserMapper
      */
     static public function mapToObject(?string $strDB): ?User
     {
-        //return trim($strDB) ? unserialize(trim($strDB)) : null;
         return $strDB ? unserialize($strDB) : null;
     }
 

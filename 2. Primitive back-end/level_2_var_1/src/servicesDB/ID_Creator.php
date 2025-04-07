@@ -1,8 +1,5 @@
 <?php
-
 require_once (__DIR__ . '/../../vendor/autoload.php');
-
-use FileService as ValidatorDB;
 
 class ID_Creator
 {
@@ -14,7 +11,7 @@ class ID_Creator
      */
     public static function createNewId(): int
     {
-        ValidatorDB::ensureFileExists(self::ID_COUNTER_FILE);
+        FileService::ensureFileExists(self::ID_COUNTER_FILE);
         $currentId = file_get_contents(self::ID_COUNTER_FILE) + 1;
         file_put_contents(self::ID_COUNTER_FILE, $currentId);
 
