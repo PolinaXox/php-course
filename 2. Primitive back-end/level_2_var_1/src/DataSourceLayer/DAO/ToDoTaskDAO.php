@@ -1,78 +1,99 @@
 <?php
-// no usage partly
-namespace App\ORM\DAO;
 
-use App\DataSourceLayer\servicesDB\FileService as FileService;
-use App\entities\ToDoTask as ToDoTask;
-use App\ORM\dataMappers\ToDoTaskMapper as ToDoTaskMapper;
-use App\PresentationLayer\DataTransferObjects\RequiredToDoTaskData as RequiredToDoTaskData;
-use App\services\validationServices\UserToDoTaskDataValidatorService as Validator;
-use Exception;
+namespace App\DataSourceLayer\DAO;
 
-class ToDoTaskDAO implements RequiredToDoTaskData
+use App\DataSourceLayer\DataMapper\ToDoTaskMapper as ToDoTaskMapper;
+use App\DataSourceLayer\ServiceDB\FileService as FileService;
+use App\DomainLayer\Entity\ToDoTask as ToDoTask;
+use App\DomainLayer\Exception\AppException as AppException;
+use App\PresentationLayer\DataTransferObject\ToDoTaskDTO as ToDoTaskDTO;
+
+//use Exception;
+
+class ToDoTaskDAO
 {
+    const string TO_DO_LISTS_DIR = __DIR__ . '/../../../FileDB/toDoLists/';
+
+    private string $filePath;
+    private array $tasks;
+
+    /**
+     * @param string $fileName
+     * @throws AppException
+     */
+    // ++
+    public function __construct(string $fileName)
+    {
+        $this->filePath = self::TO_DO_LISTS_DIR . $fileName;
+        new FileService()->ensureFileExists($this->filePath);
+        $this->tasks = json_decode(file_get_contents($this->filePath), true) ?? [];
+    }
+
+    /**
+     * @return string
+     */
+    // ++
+    public function getAllTasksForFront(): string
+    {
+        return json_encode(['items' => array_values($this->tasks)]);
+    }
+
     /**
      * @param ToDoTask $toDoTask
-     * @param string $fileName
      * @return bool
-     * @throws Exception
      */
-    public function save(ToDoTask $toDoTask, string $fileName): bool
+    public function save(ToDoTask $toDoTask): bool
     {
-        $arr = self::getTasksListAsArray($fileName);
-        $arr[] = ToDoTaskMapper::mapToJsonFileItem($toDoTask);
+        $key = $toDoTask->id;
+        $this->tasks[$key] = new ToDoTaskMapper()->mapToDatabaseRecord($toDoTask);
 
-        return FileService::rewriteFile($fileName, $arr);
+        return $this->saveChangesToDB();
+    }
+
+    private function saveChangesToDB(): bool
+    {
+        return file_put_contents(
+            $this->filePath,
+            json_encode($this->tasks, JSON_PRETTY_PRINT | JSON_NUMERIC_CHECK)
+        );
     }
 
     /**
-     * @param int $taskToDeleteId
-     * @param string $fileName
+     * @param int $index
      * @return bool
-     * @throws Exception
      */
-    public function delete(int $taskToDeleteId, string $fileName): bool
+    public function delete(int $index): bool
     {
-        $arr = self::getTasksListAsArray($fileName);
-
-        foreach ($arr as $key=>$item) {
-            if($item['id'] == $taskToDeleteId) {
-                unset($arr[$key]);
-                break;
-            }
+        if (!array_key_exists($index, $this->tasks)) {
+            return false;
         }
 
-        return FileService::rewriteFile($fileName, array_values($arr));
+        unset($this->tasks[$index]);
+
+        return $this->saveChangesToDB();
     }
 
     /**
-     * @param string $fileName
+     * @param ToDoTaskDTO $taskDTO
      * @return bool
-     * @throws Exception
      */
-    public function update(string $fileName): bool
+    // ++
+    public function update(ToDoTaskDTO $taskDTO): bool
     {
-        $validator = new Validator();
-        $arr = self::getTasksListAsArray($fileName);
-
-        for ($ind = 0; $ind < count($arr); $ind++) {
-            if($arr[$ind][self::ID] == $validator->getValidToDoTaskId()) {
-                $arr[$ind][self::TEXT] = $validator->getValidToDoTaskText();
-                $arr[$ind][self::STATE] = $validator->getValidToDoTaskState();
-                break;
-            }
+        // якщо запису немає - нічого не робити
+        if (!array_key_exists($taskDTO->id, $this->tasks)) {
+            return false;
         }
 
-        return FileService::rewriteFile($fileName, array_values($arr));
-    }
+        // а ще можна через об'єкт
+        // знайти запис по ід з ДТО -> записати запис з БД в об'єкт ->
+        // -> змінити об'єкт -> записати об'єкт в БД
+        $this->tasks[$taskDTO->id] = [
+            'id' => $taskDTO->id,
+            'text' => $taskDTO->text,
+            'checked' => $taskDTO->checked,
+        ];
 
-    /**
-     * @param $fileName
-     * @return array
-     * @throws Exception
-     */
-    private function getTasksListAsArray($fileName): array
-    {
-        return FileService::getToDoListFileContentAsArray($fileName);
+        return $this->saveChangesToDB();
     }
 }

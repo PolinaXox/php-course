@@ -1,96 +1,80 @@
 <?php
-// -
-// no usage
 
-namespace App\ORM\DAO;
+namespace App\DataSourceLayer\DAO;
 
-use App\DataSourceLayer\servicesDB\FileService as ValidatorDB;
-use App\entities\User as User;
-use App\ORM\dataMappers\UserMapper as userMapper;
+use App\DataSourceLayer\DataMapper\UserMapper as UserMapper;
+use App\DataSourceLayer\ServiceDB\FileService as FileService;
+use App\DomainLayer\Entity\User as User;
+use App\DomainLayer\Exception\AppException as AppException;
+use App\DomainLayer\Exception\AppExceptionsList as AppExceptionsList;
+use App\PresentationLayer\InputValidator\AbsentValue as AbsentValue;
 use Exception;
 
 class UserDAO
 {
-    const string REGISTERED_USERS_FILE = __DIR__ . '/../../../FileDB/registered_users.txt';
+    private string $filePath = __DIR__ . '/../../../FileDB/registered_users.json';
+    private array $users;
+
+    /**
+     * @throws Exception
+     */
+    // ++
+    public function __construct()
+    {
+        new FileService()->ensureFileExists($this->filePath);
+        $this->users = json_decode(file_get_contents($this->filePath), true) ?? [];
+    }
 
     /**
      * @param User $user
      * @return bool
-     * @throws Exception
      */
+    // ++
     public function save(User $user): bool
     {
-        ValidatorDB::ensureFileExists(self::REGISTERED_USERS_FILE);
+        $key = $user->login; // ??????????????????
+        $this->users[$key] = new UserMapper()->mapToDatabaseRecord($user);
+
+        return $this->saveChangesToDB();
+    }
+
+    /**
+     * @return bool
+     */
+    // ++
+    private function saveChangesToDB(): bool
+    {
         return file_put_contents(
-            self::REGISTERED_USERS_FILE,
-            UserDAO . phpUserMapper::mapToStringDB($user) . PHP_EOL,
-            FILE_APPEND
+            $this->filePath,
+            json_encode($this->users, JSON_PRETTY_PRINT | JSON_NUMERIC_CHECK)
         );
     }
 
     /**
-     * @param int $id
-     * @return User|null
-     * @throws Exception
+     * @param string $login
+     * @return void
+     * @throws AppException
      */
-    public function find(int $id): ?User
+    // ++
+    public function ensureUserLoginIsUnique(string $login): void
     {
-        return $this->findFirstByOneCriteria('id', $id);
+        if ($this->findByLogin($login) instanceof AbsentValue) {
+            return;
+        }
+
+        throw AppException::fromEnum(AppExceptionsList::LoginIsNotUnique);
     }
 
     /**
      * @param string $login
-     * @return User|null
-     * @throws Exception
+     * @return User|AbsentValue
+     * @throws AppException
      */
-    public function findByLogin(string $login): ?User
+    // ++
+    public function findByLogin(string $login): User|AbsentValue
     {
-        return $this->findFirstByOneCriteria('login', $login);
-    }
-
-    /**
-     * @param string $criteria
-     * @param string $value
-     * @return User|null
-     * @throws Exception
-     */
-    private function findFirstByOneCriteria(string $criteria, string $value): ?User
-    {
-        ValidatorDB::ensureFileExists(self::REGISTERED_USERS_FILE);
-        $file = fopen(self::REGISTERED_USERS_FILE, 'r');
-        $user = $this->findFirstInFile($file, $criteria, $value);
-        fclose($file);
-        return $user ?? null;
-    }
-
-    /**
-     * @param $file /resource/
-     * @param string $criteria
-     * @param string $value
-     * @return User|null
-     */
-    private function findFirstInFile($file, string $criteria, string $value): ?User
-    {
-        while (!feof($file)) {
-            if ($user = self::findInLine(fgets($file), $criteria, $value)) {
-                return $user;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * @param string $line
-     * @param string $criteria
-     * @param string $value
-     * @return User|null
-     */
-    private function findInLine(string $line, string $criteria, string $value): ?User
-    {
-        $user = UserMapper::mapToObject(trim($line)) ?? null;
-        if (!$user || ($user->toArray()[$criteria] ?? null) !== $value) {
-            return null;
-        }
-        return $user;
+        return array_key_exists($login, $this->users) ?
+            new UserMapper()->mapToEntity($this->users[$login]) :
+            AbsentValue::instance();
     }
 }
