@@ -25,8 +25,7 @@ try {
         throw AppException::fromEnum(AppExceptionsList::SessionNotInitialized);
     }
 
-    $taskDTO = new ToDoTaskDTO();
-    //var_dump($taskDTO);
+    $taskDTO = ToDoTaskDTO::forChange();
     new ToDoTaskDAO($_SESSION['userFile'])->update($taskDTO);
 
     // to front

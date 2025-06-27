@@ -6,9 +6,8 @@ use App\DataSourceLayer\DataMapper\ToDoTaskMapper as ToDoTaskMapper;
 use App\DataSourceLayer\ServiceDB\FileService as FileService;
 use App\DomainLayer\Entity\ToDoTask as ToDoTask;
 use App\DomainLayer\Exception\AppException as AppException;
+use App\DomainLayer\Exception\AppExceptionsList as AppExceptionsList;
 use App\PresentationLayer\DataTransferObject\ToDoTaskDTO as ToDoTaskDTO;
-
-//use Exception;
 
 class ToDoTaskDAO
 {
@@ -21,7 +20,6 @@ class ToDoTaskDAO
      * @param string $fileName
      * @throws AppException
      */
-    // ++
     public function __construct(string $fileName)
     {
         $this->filePath = self::TO_DO_LISTS_DIR . $fileName;
@@ -50,6 +48,9 @@ class ToDoTaskDAO
         return $this->saveChangesToDB();
     }
 
+    /**
+     * @return bool
+     */
     private function saveChangesToDB(): bool
     {
         return file_put_contents(
@@ -74,22 +75,23 @@ class ToDoTaskDAO
     }
 
     /**
+     * Task updating bases on ToDoTaskDTO obj, NOT on ToDoTask obj
+     *
      * @param ToDoTaskDTO $taskDTO
      * @return bool
+     * @throws AppException
      */
-    // ++
     public function update(ToDoTaskDTO $taskDTO): bool
     {
-        // якщо запису немає - нічого не робити
-        if (!array_key_exists($taskDTO->id, $this->tasks)) {
-            return false;
+        $taskId = $taskDTO->id;
+
+        if (!array_key_exists($taskId, $this->tasks)) {
+            throw AppException::fromEnum(AppExceptionsList::DBRecordNotFound,
+                ['filePath' => $this->filePath, 'taskId' => $taskId]);
         }
 
-        // а ще можна через об'єкт
-        // знайти запис по ід з ДТО -> записати запис з БД в об'єкт ->
-        // -> змінити об'єкт -> записати об'єкт в БД
-        $this->tasks[$taskDTO->id] = [
-            'id' => $taskDTO->id,
+        $this->tasks[$taskId] = [
+            'id' => $taskId,
             'text' => $taskDTO->text,
             'checked' => $taskDTO->checked,
         ];
