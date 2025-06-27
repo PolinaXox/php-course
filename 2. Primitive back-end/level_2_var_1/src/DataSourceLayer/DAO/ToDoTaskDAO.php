@@ -67,11 +67,7 @@ class ToDoTaskDAO
      */
     public function delete(int $taskId): bool
     {
-        if (!array_key_exists($taskId, $this->tasks)) {
-            throw AppException::fromEnum(AppExceptionsList::DBRecordNotFound,
-                ['filePath' => $this->filePath, 'taskId' => $taskId]);
-        }
-
+        $this->ensureTaskExists($taskId);
         unset($this->tasks[$taskId]);
 
         return $this->saveChangesToDB();
@@ -87,12 +83,7 @@ class ToDoTaskDAO
     public function update(ToDoTaskDTO $taskDTO): bool
     {
         $taskId = $taskDTO->id;
-
-        if (!array_key_exists($taskId, $this->tasks)) {
-            throw AppException::fromEnum(AppExceptionsList::DBRecordNotFound,
-                ['filePath' => $this->filePath, 'taskId' => $taskId]);
-        }
-
+        $this->ensureTaskExists($taskId);
         $this->tasks[$taskId] = [
             'id' => $taskId,
             'text' => $taskDTO->text,
@@ -100,5 +91,20 @@ class ToDoTaskDAO
         ];
 
         return $this->saveChangesToDB();
+    }
+
+    /**
+     * @param int $taskId
+     * @return void
+     * @throws AppException
+     */
+    private function ensureTaskExists(int $taskId): void
+    {
+        if (array_key_exists($taskId, $this->tasks)) {
+            return;
+        }
+
+        throw AppException::fromEnum(AppExceptionsList::DBRecordNotFound,
+            ['filePath' => $this->filePath, 'taskId' => $taskId]);
     }
 }
