@@ -2,40 +2,61 @@
 
 namespace App\PresentationLayer\DataTransferObject;
 
+use App\DomainLayer\Exception\AppException as AppException;
 use App\PresentationLayer\InputValidator\AbsentValue as AbsentValue;
 use App\PresentationLayer\InputValidator\InputValidator as InputValidator;
 
 readonly class ToDoTaskDTO
 {
-    public int|AbsentValue $id;
-    public string|AbsentValue $text;
-    public bool|AbsentValue $checked;
-
-    function __construct()
+    function __construct(
+        public int|AbsentValue    $id,
+        public string|AbsentValue $text = '',
+        public bool|AbsentValue   $checked = false,
+    )
     {
-        $validator = new InputValidator();
-        $this->id = $validator->getValidValue('id');
-        $this->text = $validator->getValidValue('text');
-        $this->checked = $validator->getValidValue('checked');
-
-
-
     }
 
-    // valid option:
-    // id - text - checked
-    // addItem:
-    //      id      : AV     - немає і не може бути, встановлюється нове
-    //      text    : !empty - порожнє поле не пропускає фронт
-    //      checked : AV     - немає і не може бути, встановлюється checked==false
-    //
-    // changeItem:      id - anyValue  - checked==someValue
-    //      id      : той, що існує - МАЄ БУТИ
-    //      text    : будь-що       - МАЄ БУТИ !empty (за логікою додавання, але фронт пропускає порожнє поле )
-    //      checked : МАЄ БУТИ      -
-    //
-    //
-    // deleteItem       id - AV        - AV
+
+    /**
+     * @return self
+     * @throws AppException
+     */
+    public static function forAdd(): self
+    {
+        $validator = new InputValidator();
+
+        return new self(
+            id: AbsentValue::instance(),
+            text: $validator->getRequiredValidValue('text'),
+            checked: false,
+        );
+    }
+
+    /**
+     * @return self
+     * @throws AppException
+     */
+    public static function forChange(): self
+    {
+        $validator = new InputValidator();
+
+        return new self(
+            id: $validator->getRequiredValidValue('id'),
+            text: $validator->getRequiredValidValue('text'),
+            checked: $validator->getRequiredValidValue('checked'),
+        );
+    }
+
+    /**
+     * @return self
+     * @throws AppException
+     */
+    public static function forDelete(): self
+    {
+        return new self(
+            id: new InputValidator()->getRequiredValidValue('id'),
+        );
+    }
 }
 
 // не подобається: індекси для $requestBody['login'] у термінах front`a
