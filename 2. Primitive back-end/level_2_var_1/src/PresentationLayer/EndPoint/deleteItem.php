@@ -25,8 +25,8 @@ try{
         throw AppException::fromEnum(AppExceptionsList::SessionNotInitialized);
     }
 
-    $index = new ToDoTaskDTO()->id;
-    new ToDoTaskDAO($_SESSION['userFile'])->delete($index);
+    $taskId = ToDoTaskDTO::forDelete()->id;
+    new ToDoTaskDAO($_SESSION['userFile'])->delete($taskId);
 
     // to front
     header('Content-Type: application/json', false);

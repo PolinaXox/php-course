@@ -30,7 +30,6 @@ class ToDoTaskDAO
     /**
      * @return string
      */
-    // ++
     public function getAllTasksForFront(): string
     {
         return json_encode(['items' => array_values($this->tasks)]);
@@ -60,16 +59,20 @@ class ToDoTaskDAO
     }
 
     /**
-     * @param int $index
+     *  Task deleting bases on ToDoTaskDTO obj (its $id), NOT on ToDoTask obj
+     *
+     * @param int $taskId
      * @return bool
+     * @throws AppException
      */
-    public function delete(int $index): bool
+    public function delete(int $taskId): bool
     {
-        if (!array_key_exists($index, $this->tasks)) {
-            return false;
+        if (!array_key_exists($taskId, $this->tasks)) {
+            throw AppException::fromEnum(AppExceptionsList::DBRecordNotFound,
+                ['filePath' => $this->filePath, 'taskId' => $taskId]);
         }
 
-        unset($this->tasks[$index]);
+        unset($this->tasks[$taskId]);
 
         return $this->saveChangesToDB();
     }
