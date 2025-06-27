@@ -26,7 +26,7 @@ try {
         throw AppException::fromEnum(AppExceptionsList::SessionNotInitialized);
     }
 
-    $taskDTO = new ToDoTaskDTO();
+    $taskDTO = ToDoTaskDTO::forAdd();
     $newTask = ToDoTask::createNewToDoTask($taskDTO);
     new ToDoTaskDAO($_SESSION['userFile'])->save($newTask);
 
@@ -44,8 +44,5 @@ try {
     exit;
 }
 
-//    http_response_code($ex->getCode());
-//    echo json_encode(['exMessage' => $ex->getMessage()]);
-
-// ToDo set_error_handler()
-// ToDo set_exception_handler()
+// To Do set_error_handler()
+// To Do set_exception_handler()

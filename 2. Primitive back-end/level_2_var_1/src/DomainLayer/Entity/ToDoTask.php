@@ -22,8 +22,8 @@ class ToDoTask extends DomainObject
     )
     {
         parent::__construct($id);
-        $this->text = $this->resolve($this->text, 'Some task');
-        $this->checked = $this->resolve($checked, false);
+        //$this->text = $this->resolve($this->text, 'Some task');     // unnecessary action ?????? now constr uses only for new tasks
+        //$this->checked = $this->resolve($checked, false);           // unnecessary action ??????
     }
 
 
@@ -35,9 +35,9 @@ class ToDoTask extends DomainObject
     public static function createNewToDoTask(ToDoTaskDTO $taskDTO): self
     {
         return new self(
-            id: AbsentValue::instance(),
+            id: AbsentValue::instance(),        // now $taskDTO->id == always AbsentValue::instance()
             text: $taskDTO->text,
-            checked: false,
+            checked: false,                     // now $taskDTO->checked == always false
         );
     }
 }

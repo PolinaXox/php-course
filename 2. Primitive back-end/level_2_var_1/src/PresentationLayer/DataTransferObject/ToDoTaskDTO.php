@@ -28,7 +28,6 @@ readonly class ToDoTaskDTO
         return new self(
             id: AbsentValue::instance(),
             text: $validator->getRequiredValidValue('text'),
-            checked: false,
         );
     }
 
