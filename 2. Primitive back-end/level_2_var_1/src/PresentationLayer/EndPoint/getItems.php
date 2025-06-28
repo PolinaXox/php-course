@@ -8,7 +8,7 @@ require_once 'cookie_sets.php';
 use App\DataSourceLayer\DAO\ToDoTaskDAO as ToDoTaskDAO;
 use App\DomainLayer\Exception\AppException as AppException;
 use App\DomainLayer\Exception\AppExceptionsList as AppExceptionsList;
-use Exception;
+use Exception as Exception;
 
 define('THIS_SCRIPT_METHOD', 'GET');
 
@@ -29,13 +29,9 @@ try {
     echo new ToDoTaskDAO($_SESSION['userFile'])->getAllTasksForFront();
 
 } catch (AppException $ex) {
-
-    // to front
     $ex->sendResponseToFront();
     exit;
 } catch (Exception) {
     http_response_code(500);
     exit;
 }
-
-// I am here now!!! In the line below.

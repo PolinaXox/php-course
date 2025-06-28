@@ -1,5 +1,5 @@
 <?php
-// ++
+
 namespace App\PresentationLayer\InputValidator;
 
 // singleton

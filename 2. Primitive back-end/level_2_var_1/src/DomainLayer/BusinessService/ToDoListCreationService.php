@@ -23,7 +23,6 @@ class ToDoListCreationService
      * @return bool
      * @throws AppException
      */
-    // ++
     public function create(User $user): bool
     {
         $fileName = $this->createFileName($user->login);
@@ -35,7 +34,6 @@ class ToDoListCreationService
      * @param string $userName
      * @return string
      */
-    // ++
     private function createFileName(string $userName): string
     {
         return self::FILE_NAME_PREFIX . $userName . self::FILE_EXTENSION;
@@ -43,12 +41,11 @@ class ToDoListCreationService
 
 
     /**
-     * Uses during authorization
+     * Uses during authentication
      *
      * @param string $fileName
      * @throws AppException
      */
-    // ++
     public function ensureFileExistOrCreate(string $fileName): void
     {
         $filePath = self::TO_DO_LISTS_DIR . $fileName;
@@ -62,12 +59,3 @@ class ToDoListCreationService
         new FileService()->ensureFileExists($filePath);
     }
 }
-
-// ++1. створити ім'я файлу (при реєстрації)
-// ++2. додати запис в список toDoList (при реєстрації)
-// 3. створити файл фізично (при авторизації)
-
-// ще можна
-// name: class ToDoListManagementService
-// додатковий метод: якщо файл порожній, видалити його фізично при виході з системи (запис - не видаляти)
-// додатковий метод: видавати файл (надавати доступ) при авторизації (зараз цей метод в UserAuthorizationService)

@@ -13,7 +13,6 @@ abstract class DomainObject
      * @param int|AbsentValue $id
      * @throws AppException
      */
-    // ++
     public function __construct(protected(set) int|AbsentValue $id)
     {
         $this->id = $this->resolve($id, IdCreator::createNewId());
@@ -24,7 +23,6 @@ abstract class DomainObject
      * @param $defaultValue
      * @return mixed
      */
-    // ++
     protected function resolve($value, $defaultValue): string
     {
         return ($value instanceof AbsentValue) ? $defaultValue : $value;
@@ -33,7 +31,6 @@ abstract class DomainObject
     /**
      * @return array
      */
-    // ++
     public function toArray(): array
     {
         $array = [];
@@ -46,3 +43,5 @@ abstract class DomainObject
         return $array;
     }
 }
+
+// перевірити, як працює кастинг array з полями public private(set)

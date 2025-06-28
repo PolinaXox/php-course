@@ -11,7 +11,6 @@ class ToDoListMapper
      * @param ToDoList $toDoList
      * @return array
      */
-    // ++
     public function mapToDatabaseRecord(ToDoList $toDoList): array
     {
         return $toDoList->toArray();

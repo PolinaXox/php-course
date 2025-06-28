@@ -15,8 +15,8 @@ class ToDoList extends DomainObject
      * @throws AppException
      */
     public function __construct(
-        private(set) readonly int    $userId,
-        private(set) readonly string $fileName,
+        private(set) int    $userId,
+        private(set) string $fileName,
         protected(set) int|AbsentValue  $id)
     {
         parent::__construct($id);
@@ -36,12 +36,4 @@ class ToDoList extends DomainObject
             id: AbsentValue::instance()
         );
     }
-
-//    /**
-//     * @return string
-//     */
-//    public function getFileName(): string
-//    {
-//        return $this->fileName;
-//    }
 }

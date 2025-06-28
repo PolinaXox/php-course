@@ -1,5 +1,5 @@
 <?php
-// ++
+
 namespace App\PresentationLayer\EndPoint;
 
 require_once __DIR__ . '/../../../vendor/autoload.php';
@@ -10,7 +10,7 @@ use App\DomainLayer\BusinessService\UserAuthenticationService as Authenticator;
 use App\DomainLayer\Exception\AppException as AppException;
 use App\DomainLayer\Exception\AppExceptionsList as AppExceptionsList;
 use App\PresentationLayer\DataTransferObject\UserDTO as UserDTO;
-use Exception;
+use Exception as Exception;
 
 define('THIS_SCRIPT_METHOD', 'POST');
 
@@ -39,8 +39,6 @@ try {
     echo json_encode(['ok' => 'true']);
 
 } catch (AppException $ex) {
-
-    // response to front
     $ex->sendResponseToFront();
     exit;
 } catch (Exception) {
@@ -49,5 +47,3 @@ try {
 }
 
 //header('Set-Cookie: sessionId=' . session_id() . '; Secure; HttpOnly; SameSite=None; Path=/; Partitioned;', false);
-
-// I am here now!!! In the line below.

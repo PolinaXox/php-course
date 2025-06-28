@@ -18,7 +18,6 @@ class ToDoListDAO
     /**
      * @throws AppException
      */
-    // ++
     public function __construct()
     {
         new FileService()->ensureFileExists($this->filePath);
@@ -29,7 +28,6 @@ class ToDoListDAO
      * @param ToDoList $toDoList
      * @return bool
      */
-    // ++
     public function save(ToDoList $toDoList): bool
     {
         $key = $toDoList->id;
@@ -41,7 +39,6 @@ class ToDoListDAO
     /**
      * @return bool
      */
-    // ++
     private function saveChangesToDB(): bool
     {
         return file_put_contents(
@@ -71,7 +68,6 @@ class ToDoListDAO
      * @return ToDoList
      * @throws AppException
      */
-    // ++
     public function getUserToDoList(int $userId): ToDoList
     {
         $toDoList = $this->findByUser($userId); // mb AbsentValue

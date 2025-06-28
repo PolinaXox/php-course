@@ -1,5 +1,5 @@
 <?php
-// ++
+
 namespace App\PresentationLayer\InputValidator;
 
 use App\PresentationLayer\InputValidator\AbsentValue as AbsentValue;

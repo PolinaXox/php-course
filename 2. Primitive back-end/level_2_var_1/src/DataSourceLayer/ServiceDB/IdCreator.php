@@ -1,5 +1,5 @@
 <?php
-// ++
+
 namespace App\DataSourceLayer\ServiceDB;
 
 use App\DataSourceLayer\ServiceDB\FileService as FileService;
@@ -13,7 +13,6 @@ class IdCreator
      * @return int
      * @throws AppException
      */
-    // ++
     public static function createNewId(): int
     {
         new FileService()->ensureFileExists(self::ID_COUNTER_FILE);

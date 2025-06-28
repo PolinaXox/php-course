@@ -12,7 +12,6 @@ use App\PresentationLayer\DataTransferObject\ToDoTaskDTO as ToDoTaskDTO;
 class ToDoTaskDAO
 {
     const string TO_DO_LISTS_DIR = __DIR__ . '/../../../FileDB/toDoLists/';
-
     private string $filePath;
     private array $tasks;
 

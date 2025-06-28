@@ -33,7 +33,10 @@ class InputValidator
         }
     }
 
-
+    /**
+     * @param string $key
+     * @return string|AbsentValue
+     */
     public function getValidValue(string $key): string|AbsentValue
     {
         if (!array_key_exists($key, $this->jsonAsArray)) {
@@ -48,7 +51,6 @@ class InputValidator
      * @return string
      * @throws AppException
      */
-    // ++
     public function getRequiredValidValue(string $key): string
     {
         if (!array_key_exists($key, $this->jsonAsArray)) {

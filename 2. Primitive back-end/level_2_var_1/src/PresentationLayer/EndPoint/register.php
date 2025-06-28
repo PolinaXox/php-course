@@ -1,5 +1,5 @@
 <?php
-// ++
+
 namespace App\PresentationLayer\EndPoint;
 
 require_once __DIR__ . '/../../../vendor/autoload.php';
@@ -9,7 +9,7 @@ use App\DomainLayer\BusinessService\UserRegistrationService as UserRegistrationS
 use App\DomainLayer\Entity\User as User;
 use App\DomainLayer\Exception\AppException as AppException;
 use App\PresentationLayer\DataTransferObject\UserDTO as UserDTO;
-use Exception;
+use Exception as Exception;
 
 define('THIS_SCRIPT_METHOD', 'POST');
 
@@ -30,13 +30,9 @@ try {
     echo json_encode(['ok' => 'true']);
 
 } catch (AppException $ex) {
-
-    // response to front
     $ex->sendResponseToFront();
     exit;
 } catch (Exception) {
     http_response_code(500);
     exit;
 }
-
-// I am here now!!! In the line below.

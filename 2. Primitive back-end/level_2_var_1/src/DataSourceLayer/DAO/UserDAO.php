@@ -8,7 +8,6 @@ use App\DomainLayer\Entity\User as User;
 use App\DomainLayer\Exception\AppException as AppException;
 use App\DomainLayer\Exception\AppExceptionsList as AppExceptionsList;
 use App\PresentationLayer\InputValidator\AbsentValue as AbsentValue;
-use Exception;
 
 class UserDAO
 {
@@ -16,9 +15,8 @@ class UserDAO
     private array $users;
 
     /**
-     * @throws Exception
+     * @throws AppException
      */
-    // ++
     public function __construct()
     {
         new FileService()->ensureFileExists($this->filePath);
@@ -29,10 +27,9 @@ class UserDAO
      * @param User $user
      * @return bool
      */
-    // ++
     public function save(User $user): bool
     {
-        $key = $user->login; // ??????????????????
+        $key = $user->login; // ?????????????????
         $this->users[$key] = new UserMapper()->mapToDatabaseRecord($user);
 
         return $this->saveChangesToDB();
@@ -41,7 +38,6 @@ class UserDAO
     /**
      * @return bool
      */
-    // ++
     private function saveChangesToDB(): bool
     {
         return file_put_contents(
@@ -55,7 +51,6 @@ class UserDAO
      * @return void
      * @throws AppException
      */
-    // ++
     public function ensureUserLoginIsUnique(string $login): void
     {
         if ($this->findByLogin($login) instanceof AbsentValue) {
@@ -70,7 +65,6 @@ class UserDAO
      * @return User|AbsentValue
      * @throws AppException
      */
-    // ++
     public function findByLogin(string $login): User|AbsentValue
     {
         return array_key_exists($login, $this->users) ?

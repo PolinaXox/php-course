@@ -35,7 +35,6 @@ class User extends DomainObject
      * @return self
      * @throws AppException
      */
-    // ++
     public static function createNewUser(UserDTO $dto): self
     {
         return new self(

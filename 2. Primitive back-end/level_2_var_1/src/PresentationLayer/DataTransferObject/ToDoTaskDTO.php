@@ -16,7 +16,6 @@ readonly class ToDoTaskDTO
     {
     }
 
-
     /**
      * @return self
      * @throws AppException

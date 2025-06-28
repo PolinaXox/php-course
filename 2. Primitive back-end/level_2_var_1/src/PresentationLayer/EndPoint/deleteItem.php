@@ -33,8 +33,6 @@ try{
     echo json_encode(['ok' => true]);
 
 } catch (AppException $ex) {
-
-    // to front
     $ex->sendResponseToFront();
     exit;
 } catch (Exception) {

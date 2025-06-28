@@ -10,7 +10,7 @@ use App\DomainLayer\Entity\ToDoTask as ToDoTask;
 use App\DomainLayer\Exception\AppException as AppException;
 use App\DomainLayer\Exception\AppExceptionsList as AppExceptionsList;
 use App\PresentationLayer\DataTransferObject\ToDoTaskDTO as ToDoTaskDTO;
-use Exception;
+use Exception as Exception;
 
 define('THIS_SCRIPT_METHOD', 'POST');
 
@@ -35,8 +35,6 @@ try {
     echo json_encode(['id' => $newTask->id]);
 
 } catch (AppException $ex) {
-
-    // to front
     $ex->sendResponseToFront();
     exit;
 }  catch (Exception) {

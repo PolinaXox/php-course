@@ -1,5 +1,5 @@
 <?php
-// ++
+
 namespace App\DataSourceLayer\ServiceDB;
 
 use App\DomainLayer\Exception\AppException as AppException;
@@ -12,7 +12,6 @@ class FileService
      * @return void
      * @throws AppException
      */
-    // ++
     public function ensureFileExists(string $filePath): void
     {
         if (!file_exists($filePath)) {

@@ -7,7 +7,7 @@ use App\DomainLayer\Entity\User as User;
 use App\DomainLayer\Exception\AppException as AppException;
 use App\DomainLayer\Exception\AppExceptionsList as AppExceptionsList;
 use App\PresentationLayer\DataTransferObject\UserDTO as UserDTO;
-use App\PresentationLayer\InputValidator\AbsentValue;
+use App\PresentationLayer\InputValidator\AbsentValue as AbsentValue;
 
 class UserAuthenticationService
 {
@@ -16,7 +16,6 @@ class UserAuthenticationService
      * @return User
      * @throws AppException
      */
-    // ++
     public function getAuthenticatedUser(UserDTO $userDTO): User
     {
         $user = new UserDAO()->findByLogin($userDTO->login);                // mb AbsentValue
@@ -31,10 +30,9 @@ class UserAuthenticationService
      * @return void
      * @throws AppException
      */
-    // ++
     private function ensureUserIsExist(User|AbsentValue $user): void
     {
-        if ($user instanceof AbsentValue)  {
+        if ($user instanceof AbsentValue) {
             throw AppException::fromEnum(AppExceptionsList::UnknownUser);
         }
     }

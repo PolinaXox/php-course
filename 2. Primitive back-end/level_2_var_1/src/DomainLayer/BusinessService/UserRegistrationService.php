@@ -14,7 +14,6 @@ class UserRegistrationService
      * @return void
      * @throws AppException
      */
-    // ++
     public function register(User $user): void
     {
         new UserDAO()->save($user);

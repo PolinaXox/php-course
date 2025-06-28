@@ -11,7 +11,6 @@ class UserMapper
      * @param User $user
      * @return array
      */
-    // ++
     public function mapToDatabaseRecord(User $user): array
     {
         return $user->toArray();
@@ -22,7 +21,6 @@ class UserMapper
      * @return User
      * @throws AppException
      */
-    // ++
     public function mapToEntity(array $databaseRecord): User
     {
         return new User(

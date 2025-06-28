@@ -1,5 +1,5 @@
 <?php
-// ++
+
 namespace App\DomainLayer\Exception;
 
 enum AppExceptionsList : int

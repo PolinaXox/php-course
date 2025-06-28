@@ -1,5 +1,5 @@
 <?php
-// ++
+
 namespace App\PresentationLayer\DataTransferObject;
 
 use App\PresentationLayer\InputValidator\InputValidator as InputValidator;
