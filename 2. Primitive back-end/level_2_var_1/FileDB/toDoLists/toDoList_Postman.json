@@ -1,1 +1,22 @@
-[]
+{
+    "153": {
+        "id": 153,
+        "text": "Some Postman valid task",
+        "checked": false
+    },
+    "154": {
+        "id": 154,
+        "text": "Really important task",
+        "checked": false
+    },
+    "155": {
+        "id": 155,
+        "text": "Postman task_1",
+        "checked": false
+    },
+    "156": {
+        "id": 156,
+        "text": "Postman task_2",
+        "checked": false
+    }
+}
