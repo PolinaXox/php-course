@@ -1,0 +1,22 @@
+{
+    "Tom": {
+        "id": 142,
+        "login": "Tom",
+        "password": "$2y$12$MqGJjVxHD9B0zYqnQF8Tlu93Z7cFYJ6SHzSa76rZ4uNH3RepKWYRS"
+    },
+    "Bob": {
+        "id": 144,
+        "login": "Bob",
+        "password": "$2y$12$1m5z0TWjZD8jKdC\/D2URbeqURo1OTYdoPCEHOnqr.o3aTPvl67YPy"
+    },
+    "Sam": {
+        "id": 146,
+        "login": "Sam",
+        "password": "$2y$12$72QuHMWhu9rUmpboKFDPveO2YapuFlIZVD9\/.tHGDBQouOzJo8NYW"
+    },
+    "Postman": {
+        "id": 148,
+        "login": "Postman",
+        "password": "$2y$12$tLeXKi96htwxp1MhKq4KD.\/pLATXqYL72PqycpWskRb6cmlWj8ggG"
+    }
+}
