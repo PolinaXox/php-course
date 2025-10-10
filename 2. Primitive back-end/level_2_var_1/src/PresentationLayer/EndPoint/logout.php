@@ -5,36 +5,28 @@ namespace App\PresentationLayer\EndPoint;
 require_once __DIR__ . '/../../../vendor/autoload.php';
 
 use App\DomainLayer\Exception\AppException as AppException;
-use App\DomainLayer\Exception\AppExceptionsList as AppExceptionsList;
-use Exception as Exception;
+use App\PresentationLayer\Request\RequestPreprocessor as RequestPreprocessor;
+use App\PresentationLayer\Response\Response as Response;
+use Throwable as Throwable;
 
 define('THIS_SCRIPT_METHOD', 'POST');
 
-if ($_SERVER['REQUEST_METHOD'] !== THIS_SCRIPT_METHOD) {
-    exit;
-}
-
 try {
 
+    // middleware level
+    RequestPreprocessor::requireMethod(THIS_SCRIPT_METHOD);
     session_start();
+    RequestPreprocessor::requireActiveSession();
 
-    if (!isset($_SESSION['userFile'])) {
-        throw AppException::fromEnum(AppExceptionsList::SessionNotInitialized);
-    }
-
+    // server
     session_unset();
     session_destroy();
 
-    // to front
-    header('Content-Type: application/json', false);
-    echo json_encode(['ok' => true]);
+    // presentation level
+    Response::success(['ok' => 'true', 'userMessage' => 'Bye! See you soon!'])->send();
 
 } catch (AppException $ex) {
-    $ex->sendResponseToFront();
-    exit;
-} catch (Exception) {
-    http_response_code(500);
-    exit;
+    Response::fromException($ex)->send();
+} catch (Throwable $t) {
+    Response::fromThrowable($t)->send();
 }
-
-//  header('Set-Cookie: sessionId=; Max-Age=0; Secure; HttpOnly; SameSite=None; Path=/; Partitioned;', false);

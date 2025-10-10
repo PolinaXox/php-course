@@ -3,47 +3,63 @@
 namespace App\PresentationLayer\EndPoint;
 
 require_once __DIR__ . '/../../../vendor/autoload.php';
-require_once 'cookie_sets.php';
 
-use App\DataSourceLayer\DAO\ToDoListDAO as ToDoListDAO;
-use App\DomainLayer\BusinessService\UserAuthenticationService as Authenticator;
+use App\DataSourceLayer\DAO\UserDAO as UserDAO;
+use App\DomainLayer\BusinessService\ToDoListService as ToDoListService;
+use App\DomainLayer\BusinessService\UserAuthService as UserAuthService;
 use App\DomainLayer\Exception\AppException as AppException;
-use App\DomainLayer\Exception\AppExceptionsList as AppExceptionsList;
+use App\DomainLayer\Exception\AppExceptionsEnum as AppExceptionsEnum;
 use App\PresentationLayer\DataTransferObject\UserDTO as UserDTO;
-use Exception as Exception;
+use App\PresentationLayer\InputValidator\AbsentValue as AbsentValue;
+use App\PresentationLayer\InputValidator\InputValidator as InputValidator;
+use App\PresentationLayer\Request\JsonDataExtractor as JsonDataExtractor;
+use App\PresentationLayer\Request\RequestPreprocessor as RequestPreprocessor;
+use App\PresentationLayer\Response\Response as Response;
+use App\PresentationLayer\Utils\SessionConfigurator as SessionConfigurator;
+use Throwable;
 
 define('THIS_SCRIPT_METHOD', 'POST');
 
-if ($_SERVER['REQUEST_METHOD'] !== THIS_SCRIPT_METHOD) {
-    exit;
-}
-
 try {
 
+    // middleware level
+    RequestPreprocessor::requireMethod(THIS_SCRIPT_METHOD);
+
+    SessionConfigurator::configureCookies();
     session_start();
+    RequestPreprocessor::requireNoActiveSession();
 
-    if (isset($_SESSION['userFile'])) {
-        throw AppException::fromEnum(AppExceptionsList::SessionsConflict);
-    }
+    // presentation level
+    $requiredData = new JsonDataExtractor()->extract('login', 'pass');
+    $validator = new InputValidator(
+        $requiredData,
+        fieldsAndRules: [                                       // mb rules Enum????
+            'login' => ['checkType', 'notEmpty', 'exists'],
+            'pass' => ['checkType', 'notEmpty',],
+        ],
+        checkers: [
+            'login:checkType' => (fn($x) => is_string($x)),
+            'login:exists' => (fn(string $login) => !(new UserDAO()->findByLogin($login) instanceof AbsentValue)),
+            'pass:checkType' => (fn($x) => is_string($x)),
+        ],
+        exceptions: [
+            'login:exists' => AppExceptionsEnum::UnknownUser,
+        ],
+    );
+    $userDTO = new UserDTO($validator->validate()->validatedData);
 
-    // on server
-    $userDTO = new UserDTO();
-    $user = new Authenticator()->getAuthenticatedUser($userDTO);
-    $toDoList = new ToDoListDAO()->getUserToDoList($user->id);
+    // domain level
+    $user = new UserAuthService()->authenticate($userDTO);
+    $toDoList = new ToDoListService()->getToDoList($user);
 
     session_regenerate_id(true);
-    $_SESSION['userFile'] = $toDoList->fileName; // getFileName();
+    $_SESSION['userFile'] = $toDoList->fileName;
 
-    // to front
-    header('Content-Type: application/json', false);
-    echo json_encode(['ok' => 'true']);
+    // presentation level
+    Response::success(['ok' => 'true', 'userMessage' => 'Welcome! You have successfully logged in.'])->send();
 
 } catch (AppException $ex) {
-    $ex->sendResponseToFront();
-    exit;
-} catch (Exception) {
-    http_response_code(500);
-    exit;
+    Response::fromException($ex)->send();
+} catch (Throwable $t) {
+    Response::fromThrowable($t)->send();
 }
-
-//header('Set-Cookie: sessionId=' . session_id() . '; Secure; HttpOnly; SameSite=None; Path=/; Partitioned;', false);

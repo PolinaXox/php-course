@@ -3,39 +3,55 @@
 namespace App\PresentationLayer\EndPoint;
 
 require_once __DIR__ . '/../../../vendor/autoload.php';
-require_once 'cookie_sets.php';
 
 use App\DataSourceLayer\DAO\ToDoTaskDAO as ToDoTaskDAO;
+use App\DomainLayer\BusinessService\ToDoTaskService as ToDoTaskService;
 use App\DomainLayer\Exception\AppException as AppException;
-use App\DomainLayer\Exception\AppExceptionsList as AppExceptionsList;
 use App\PresentationLayer\DataTransferObject\ToDoTaskDTO as ToDoTaskDTO;
-use Exception as Exception;
+use App\PresentationLayer\InputValidator\AbsentValue as AbsentValue;
+use App\PresentationLayer\InputValidator\InputValidator as InputValidator;
+use App\PresentationLayer\Request\JsonDataExtractor as JsonDataExtractor;
+use App\PresentationLayer\Request\RequestPreprocessor as RequestPreprocessor;
+use App\PresentationLayer\Response\Response as Response;
+use App\PresentationLayer\Utils\SessionConfigurator as SessionConfigurator;
+
+use Throwable;
 
 define('THIS_SCRIPT_METHOD', 'DELETE');
 
-if ($_SERVER['REQUEST_METHOD'] !== THIS_SCRIPT_METHOD) {
-    exit;
-}
+try {
 
-try{
+    // middleware
+    RequestPreprocessor::requireMethod(THIS_SCRIPT_METHOD);
 
+    SessionConfigurator::configureCookies();
     session_start();
+    RequestPreprocessor::requireActiveSession();
 
-    if (!isset($_SESSION['userFile'])) {
-        throw AppException::fromEnum(AppExceptionsList::SessionNotInitialized);
-    }
+    // presentation layer
+    $requiredData = new JsonDataExtractor()->extract('id');
+    $validator = new InputValidator(
+        $requiredData,
+        fieldsAndRules: [
+            'id' => ['checkType', 'exists'],
+        ],
+        checkers: [
+            'id:checkType' => (fn($x) => is_int($x)),
+            'id:exists' => (fn($x) => !(new ToDoTaskDAO($_SESSION['userFile'])->findByKey($x) instanceof AbsentValue)),
+        ],
+    );
+    $taskDTO = ToDoTaskDTO::forDelete($validator->validate()->validatedData);
 
-    $taskId = ToDoTaskDTO::forDelete()->id;
-    new ToDoTaskDAO($_SESSION['userFile'])->delete($taskId);
+    // domain layer
+    new ToDoTaskService($_SESSION['userFile'])->deleteTask($taskDTO);
 
-    // to front
-    header('Content-Type: application/json', false);
-    echo json_encode(['ok' => true]);
+    // presentation layer
+    Response::success(['ok' => true, 'userMessage' => 'Task was deleted'])->send();
 
 } catch (AppException $ex) {
-    $ex->sendResponseToFront();
+    Response::fromException($ex)->send();
     exit;
-} catch (Exception) {
-    http_response_code(500);
+} catch (Throwable $t) {
+    Response::fromThrowable($t)->send();
     exit;
 }

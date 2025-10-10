@@ -2,36 +2,15 @@
 
 namespace App\PresentationLayer\InputValidator;
 
-use App\PresentationLayer\InputValidator\AbsentValue as AbsentValue;
-
 class InputSanitizer
 {
     /**
      * @param mixed $value
-     * @return string | AbsentValue
+     * @return mixed
      */
-    public static function getSanitizedValue(mixed $value): string|AbsentValue
+    public function getSanitizedValue(mixed $value): mixed
     {
-        // allows to return 0, 0.0, -0.0, false, null as value
-        if (self::isNumberOrBoolOrNull($value)) {
-            return $value;
-        }
-
-        if (empty($value) || empty($sanitizedValue = self::sanitizeInputValue($value))) {
-            return AbsentValue::instance();
-        }
-
-        return $sanitizedValue;
-    }
-
-
-    /**
-     * @param mixed $value
-     * @return bool
-     */
-    private static function isNumberOrBoolOrNull(mixed $value): bool
-    {
-        return is_int($value) || is_float($value) || is_bool($value) || is_null($value);
+        return is_string($value) ? $this->sanitizeString($value) : $value;
     }
 
     /**
@@ -40,9 +19,9 @@ class InputSanitizer
      * @param string $data
      * @return string
      */
-    private static function sanitizeInputValue(string $data): string
+    private function sanitizeString(string $data): string
     {
-        self::sanitizeInputValueByReference($data);
+        $this->sanitizeStringByReference($data);
 
         return $data;
     }
@@ -51,13 +30,11 @@ class InputSanitizer
      * @param string $data
      * @return void
      */
-    private static function sanitizeInputValueByReference(string &$data): void
+    private function sanitizeStringByReference(string &$data): void
     {
         $data = trim($data);
         $data = stripslashes($data);
-        $data = htmlspecialchars($data);
+        $data = htmlspecialchars($data,ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8");
     }
 }
 
-// переподумати у наступному варіанті:
-// filter_var() ???

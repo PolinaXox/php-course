@@ -3,7 +3,6 @@
 namespace App\DataSourceLayer\DataMapper;
 
 use App\DomainLayer\Entity\User as User;
-use App\DomainLayer\Exception\AppException as AppException;
 
 class UserMapper
 {
@@ -19,14 +18,13 @@ class UserMapper
     /**
      * @param array $databaseRecord
      * @return User
-     * @throws AppException
      */
     public function mapToEntity(array $databaseRecord): User
     {
         return new User(
+            id: $databaseRecord['id'],
             login: $databaseRecord['login'],
-            password: $databaseRecord['password'],
-            id: $databaseRecord['id']
+            password: $databaseRecord['password']
         );
     }
 }

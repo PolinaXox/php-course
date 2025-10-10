@@ -2,32 +2,27 @@
 
 namespace App\DomainLayer\Entity;
 
+use App\DataSourceLayer\ServiceDB\IdCreator as IdCreator;
 use App\DomainLayer\Entity\Abstraction\DomainObject as DomainObject;
-use App\PresentationLayer\DataTransferObject\UserDTO as UserDTO;
 use App\DomainLayer\Exception\AppException as AppException;
-use App\PresentationLayer\InputValidator\AbsentValue as AbsentValue;
+use App\PresentationLayer\DataTransferObject\UserDTO as UserDTO;
+
 
 class User extends DomainObject
 {
-    // as an experiment... instead of a private field and its public getter
-    private(set) string $login;
-    private(set) string $password;
-
     /**
+     * @param int $id
      * @param string $login
      * @param string $password
-     * @param int|AbsentValue $id
-     * @throws AppException
      */
     public function __construct(
-        string $login,
-        string $password,
-        int|AbsentValue $id,
+        protected(set) int $id,
+        private(set) string $login,
+        private(set) string $password
+
     )
     {
         parent::__construct($id);
-        $this->password = $password;
-        $this->login = $login;
     }
 
     /**
@@ -38,9 +33,9 @@ class User extends DomainObject
     public static function createNewUser(UserDTO $dto): self
     {
         return new self(
+            id: IdCreator::createNewId(),
             login: $dto->login,
             password: password_hash($dto->password, PASSWORD_DEFAULT),
-            id: AbsentValue::instance(),
         );
     }
 }

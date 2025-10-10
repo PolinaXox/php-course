@@ -2,62 +2,61 @@
 
 namespace App\PresentationLayer\DataTransferObject;
 
-use App\DomainLayer\Exception\AppException as AppException;
-use App\PresentationLayer\InputValidator\AbsentValue as AbsentValue;
-use App\PresentationLayer\InputValidator\InputValidator as InputValidator;
+use App\PresentationLayer\InputValidator\AbsentValue;
 
 readonly class ToDoTaskDTO
 {
+    /**
+     * @param int|AbsentValue $id
+     * @param string|AbsentValue $text
+     * @param bool|AbsentValue $checked
+     */
     function __construct(
         public int|AbsentValue    $id,
-        public string|AbsentValue $text = '',
-        public bool|AbsentValue   $checked = false,
+        public string|AbsentValue $text,
+        public bool|AbsentValue   $checked,
     )
     {
     }
 
     /**
+     * @param array $validatedData
      * @return self
-     * @throws AppException
      */
-    public static function forAdd(): self
+    public static function forAdd(array $validatedData): self
     {
-        $validator = new InputValidator();
-
         return new self(
             id: AbsentValue::instance(),
-            text: $validator->getRequiredValidValue('text'),
+            text: $validatedData['text'],
+            checked: AbsentValue::instance(),
         );
     }
 
     /**
+     * @param array $validatedData
      * @return self
-     * @throws AppException
      */
-    public static function forChange(): self
+    public static function forChange(array $validatedData): self
     {
-        $validator = new InputValidator();
-
         return new self(
-            id: $validator->getRequiredValidValue('id'),
-            text: $validator->getRequiredValidValue('text'),
-            checked: $validator->getRequiredValidValue('checked'),
+            id: $validatedData['id'],
+            text: $validatedData['text'],
+            checked: $validatedData['checked'],
         );
     }
 
     /**
+     * @param array $validatedData
      * @return self
-     * @throws AppException
      */
-    public static function forDelete(): self
+    public static function forDelete(array $validatedData): self
     {
         return new self(
-            id: new InputValidator()->getRequiredValidValue('id'),
+            id: $validatedData['id'],
+            text: AbsentValue::instance(),
+            checked: AbsentValue::instance(),
         );
     }
 }
-
-// не подобається: індекси для $requestBody['login'] у термінах front`a
-// хочу: перевести терміни front`a у терміни back`а
 
 

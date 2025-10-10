@@ -3,65 +3,139 @@
 namespace App\PresentationLayer\InputValidator;
 
 use App\DomainLayer\Exception\AppException as AppException;
-use App\DomainLayer\Exception\AppExceptionsList as AppExceptionsList;
-use App\PresentationLayer\InputValidator\AbsentValue as AbsentValue;
+use App\DomainLayer\Exception\AppExceptionsEnum as AppExceptionsEnum;
 use App\PresentationLayer\InputValidator\InputSanitizer as Sanitizer;
 
 class InputValidator
 {
-    private array $jsonAsArray;
+    private readonly array $ruleHandlers;
+    private(set) array $validatedData = [];
 
     /**
-     * @throws AppException
+     * @param array $data
+     * @param array $fieldsAndRules
+     * @param array $checkers
+     * @param array $exceptions
      */
-    public function __construct()
+    public function __construct(
+        private readonly array $data,
+        private readonly array $fieldsAndRules,
+        private readonly array $checkers = [],
+        private readonly array $exceptions = [],
+
+    )
     {
-        $jsonContent = file_get_contents('php://input');
-        $this->ensureJsonIsValid($jsonContent);
-        $this->jsonAsArray = json_decode($jsonContent, true);
+        $this->ruleHandlers = [     // mb separate obj???
+            'checkType' => fn($field, $val) => $this->assertType($field, $val),
+            'notEmpty' => fn($field, $val) => $this->assertNotEmpty($field, $val),
+            'unique' => fn($field, $val) => $this->assertUniqueness($field, $val),
+            'exists' => fn($field, $val) => $this->assertExistence($field, $val),
+
+        ];
     }
 
     /**
-     * @param string $inputFile
+     * @return self
+     * @throws AppException
+     */
+    public function validate(): self
+    {
+        foreach ($this->fieldsAndRules as $field => $rules) {
+
+            // if input value exists...
+            if (!array_key_exists($field, $this->data)) {
+                throw AppException::fromEnum(
+                    ex: AppExceptionsEnum::RequiredFieldMissing, details: ['reqField' => $field]);
+            }
+
+            // ... sanitize it and ...
+            $sanitizedValue = new Sanitizer()->getSanitizedValue($this->data[$field]);
+
+            // ... apply all the rules
+            foreach ($rules as $rule) {
+                $this->ruleHandlers[$rule]($field, $sanitizedValue);
+            }
+
+            $this->validatedData[$field] = $sanitizedValue;
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param mixed $value
+     * @param string $field
      * @return void
      * @throws AppException
      */
-    private function ensureJsonIsValid(string $inputFile): void
+    private function assertType(string $field, mixed $value): void
     {
-        if (!json_validate($inputFile)) {
-            throw AppException::fromEnum(AppExceptionsList::JsonInvalid, ['jsonError' => json_last_error_msg()]);
+        $key = $field . ':checkType';
+        $checker = $this->checkers[$key] ?? null;
+
+        if (!$checker || $checker($value)) {
+            return;
         }
+
+        throw AppException::fromEnum(
+            ex: $this->exceptions[$key] ?? AppExceptionsEnum::InvalidInputDataType,
+            details: [
+                'field' => $field,
+                'given type' => is_object($value) ? get_class($value) : gettype($value),
+            ]);
     }
 
     /**
-     * @param string $key
-     * @return string|AbsentValue
-     */
-    public function getValidValue(string $key): string|AbsentValue
-    {
-        if (!array_key_exists($key, $this->jsonAsArray)) {
-            return AbsentValue::instance();
-        }
-
-        return Sanitizer::getSanitizedValue($this->jsonAsArray[$key]);
-    }
-
-    /**
-     * @param string $key
-     * @return string
+     * @param string $field
+     * @param mixed $value
+     * @return void
      * @throws AppException
      */
-    public function getRequiredValidValue(string $key): string
+    private function assertNotEmpty(string $field, mixed $value): void
     {
-        if (!array_key_exists($key, $this->jsonAsArray)) {
-            throw AppException::fromEnum(ex: AppExceptionsList::RequiredFieldMissing, details: ['reqField' => $key]);
+        if (!empty($value)) {
+            return;
         }
 
-        $validValue = Sanitizer::getSanitizedValue($this->jsonAsArray[$key]);
-        if ($validValue instanceof AbsentValue) {
-            throw AppException::fromEnum(AppExceptionsList::RequiredFieldEmpty, ['emptyField' => $key]);
+        throw AppException::fromEnum(AppExceptionsEnum::RequiredFieldEmpty, ['emptyField' => $field]);
+    }
+
+    /**
+     * @param string $field
+     * @param mixed $value
+     * @return void
+     * @throws AppException
+     */
+    private function assertUniqueness(string $field, mixed $value): void
+    {
+        $key = $field . ':unique';
+        $checker = $this->checkers[$key] ?? null;
+
+        if (!$checker || $checker($value)) {
+            return;
         }
 
-        return $validValue;
+        throw AppException::fromEnum(
+            ex: $this->exceptions[$key] ?? AppExceptionsEnum::FieldValueIsNotUnique, details: ['field' => $field]);
+    }
+
+    /**
+     * @param string $field
+     * @param mixed $value
+     * @return void
+     * @throws AppException
+     */
+    private function assertExistence(string $field, mixed $value): void
+    {
+        $key = $field . ':exists';
+        $checker = $this->checkers[$key] ?? null;
+
+        if (!$checker || $checker($value)) {
+            return;
+        }
+
+        throw AppException::fromEnum(
+            ex: $this->exceptions[$key] ??
+                AppExceptionsEnum::NotExistsInDatabase, details: ['field' => $field, 'validation']);
     }
 }

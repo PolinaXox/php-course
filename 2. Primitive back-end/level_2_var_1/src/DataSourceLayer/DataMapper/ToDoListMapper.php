@@ -3,7 +3,6 @@
 namespace App\DataSourceLayer\DataMapper;
 
 use App\DomainLayer\Entity\ToDoList as ToDoList;
-use App\DomainLayer\Exception\AppException as AppException;
 
 class ToDoListMapper
 {
@@ -19,14 +18,13 @@ class ToDoListMapper
     /**
      * @param array $databaseRecord
      * @return ToDoList
-     * @throws AppException
      */
     public function mapToEntity(array $databaseRecord): ToDoList
     {
         return new ToDoList(
+            id: $databaseRecord['id'],
             userId: $databaseRecord['userId'],
-            fileName: $databaseRecord['fileName'],
-            id: $databaseRecord['id']
+            fileName: $databaseRecord['fileName']
         );
     }
 }

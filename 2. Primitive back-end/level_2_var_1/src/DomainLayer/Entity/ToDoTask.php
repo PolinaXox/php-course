@@ -2,6 +2,7 @@
 
 namespace App\DomainLayer\Entity;
 
+use App\DataSourceLayer\ServiceDB\IdCreator;
 use App\PresentationLayer\DataTransferObject\ToDoTaskDTO as ToDoTaskDTO;
 use App\DomainLayer\Entity\Abstraction\DomainObject as DomainObject;
 use App\PresentationLayer\InputValidator\AbsentValue as AbsentValue;
@@ -10,22 +11,18 @@ use App\DomainLayer\Exception\AppException as AppException;
 class ToDoTask extends DomainObject
 {
     /**
-     * @param int|AbsentValue $id
-     * @param string|AbsentValue $text
-     * @param bool|AbsentValue $checked
-     * @throws AppException
+     * @param int $id
+     * @param string $text
+     * @param bool $checked
      */
     public function __construct(
-        protected(set) int|AbsentValue  $id,
-        private(set) string|AbsentValue $text,
-        private(set) bool|AbsentValue   $checked,
+        protected(set) int  $id,
+        private(set) string $text,
+        private(set) bool $checked,
     )
     {
         parent::__construct($id);
-        //$this->text = $this->resolve($this->text, 'Some task');     // unnecessary action ?????? now constr uses only for new tasks
-        //$this->checked = $this->resolve($checked, false);           // unnecessary action ??????
     }
-
 
     /**
      * @param ToDoTaskDTO $taskDTO
@@ -35,9 +32,9 @@ class ToDoTask extends DomainObject
     public static function createNewToDoTask(ToDoTaskDTO $taskDTO): self
     {
         return new self(
-            id: AbsentValue::instance(),        // now $taskDTO->id == always AbsentValue::instance()
+            id: IdCreator::createNewId(),
             text: $taskDTO->text,
-            checked: false,                     // now $taskDTO->checked == always false
+            checked: false,                 // mb not necessary, mb use default value in __construct
         );
     }
 }

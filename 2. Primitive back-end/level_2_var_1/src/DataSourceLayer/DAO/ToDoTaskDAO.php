@@ -2,108 +2,82 @@
 
 namespace App\DataSourceLayer\DAO;
 
+use App\DataSourceLayer\DAO\Abstraction\AbstractDAO;
 use App\DataSourceLayer\DataMapper\ToDoTaskMapper as ToDoTaskMapper;
-use App\DataSourceLayer\ServiceDB\FileService as FileService;
+use App\DomainLayer\Entity\Abstraction\DomainObject;
 use App\DomainLayer\Entity\ToDoTask as ToDoTask;
 use App\DomainLayer\Exception\AppException as AppException;
-use App\DomainLayer\Exception\AppExceptionsList as AppExceptionsList;
-use App\PresentationLayer\DataTransferObject\ToDoTaskDTO as ToDoTaskDTO;
+use App\DomainLayer\Exception\AppExceptionsEnum as AppExceptionsEnum;
+use App\PresentationLayer\InputValidator\AbsentValue as AbsentValue;
+use Override as Override;
 
-class ToDoTaskDAO
+class ToDoTaskDAO extends AbstractDAO
 {
-    const string TO_DO_LISTS_DIR = __DIR__ . '/../../../FileDB/toDoLists/';
-    private string $filePath;
-    private array $tasks;
+    private const string TO_DO_LISTS_DIR = __DIR__ . '/../../../FileDB/toDoLists/';
+    private string $filePathValue;
+    protected string $filePath { #[Override] get => $this->filePathValue; }
+
 
     /**
-     * @param string $fileName
      * @throws AppException
      */
     public function __construct(string $fileName)
     {
-        $this->filePath = self::TO_DO_LISTS_DIR . $fileName;
-        new FileService()->ensureFileExists($this->filePath);
-        $this->tasks = json_decode(file_get_contents($this->filePath), true) ?? [];
+        $this->filePathValue = self::TO_DO_LISTS_DIR . $fileName;
+        parent::__construct();
     }
 
     /**
-     * @return string
+     * @param DomainObject $entity
+     * @return int
+     * @throws AppException
      */
-    public function getAllTasksForFront(): string
+    #[Override]
+    protected function extractKey(DomainObject $entity): int
     {
-        return json_encode(['items' => array_values($this->tasks)]);
-    }
+        if ($entity instanceof ToDoTask) {
+            return $entity->id;
+        }
 
-    /**
-     * @param ToDoTask $toDoTask
-     * @return bool
-     */
-    public function save(ToDoTask $toDoTask): bool
-    {
-        $key = $toDoTask->id;
-        $this->tasks[$key] = new ToDoTaskMapper()->mapToDatabaseRecord($toDoTask);
-
-        return $this->saveChangesToDB();
-    }
-
-    /**
-     * @return bool
-     */
-    private function saveChangesToDB(): bool
-    {
-        return file_put_contents(
-            $this->filePath,
-            json_encode($this->tasks, JSON_PRETTY_PRINT | JSON_NUMERIC_CHECK)
+        throw AppException::fromEnum(
+            AppExceptionsEnum::InvalidDataType,
+            ['expected type'=>'ToDoTask', 'given' => get_class($entity)]
         );
     }
 
     /**
-     *  Task deleting bases on ToDoTaskDTO obj (its $id), NOT on ToDoTask obj
-     *
-     * @param int $taskId
-     * @return bool
+     * @param DomainObject $entity
+     * @return array
      * @throws AppException
      */
-    public function delete(int $taskId): bool
+    #[Override]
+    protected function mapToDataBaseRecord(DomainObject $entity): array
     {
-        $this->ensureTaskExists($taskId);
-        unset($this->tasks[$taskId]);
-
-        return $this->saveChangesToDB();
-    }
-
-    /**
-     * Task updating bases on ToDoTaskDTO obj, NOT on ToDoTask obj
-     *
-     * @param ToDoTaskDTO $taskDTO
-     * @return bool
-     * @throws AppException
-     */
-    public function update(ToDoTaskDTO $taskDTO): bool
-    {
-        $taskId = $taskDTO->id;
-        $this->ensureTaskExists($taskId);
-        $this->tasks[$taskId] = [
-            'id' => $taskId,
-            'text' => $taskDTO->text,
-            'checked' => $taskDTO->checked,
-        ];
-
-        return $this->saveChangesToDB();
-    }
-
-    /**
-     * @param int $taskId
-     * @return void
-     * @throws AppException
-     */
-    private function ensureTaskExists(int $taskId): void
-    {
-        if (array_key_exists($taskId, $this->tasks)) {
-            return;
+        if ($entity instanceof ToDoTask) {
+            return new ToDoTaskMapper()->mapToDatabaseRecord($entity);
         }
 
-        throw AppException::fromEnum(AppExceptionsList::DBRecordNotFound,
-            ['filePath' => $this->filePath, 'taskId' => $taskId]);
+        throw AppException::fromEnum(
+            AppExceptionsEnum::InvalidDataType,
+            ['expected type'=>'ToDoTask', 'given' => get_class($entity)]
+        );
+    }
+
+    /**
+     * @param array $databaseRecord
+     * @return ToDoTask
+     * @throws AppException
+     */
+    #[Override]
+    protected function mapToEntity(array $databaseRecord): ToDoTask
+    {
+        return new ToDoTaskMapper()->mapToEntity($databaseRecord);
+
+    }
+
+    #[Override]
+    public function findByKey(int|string $key): ToDoTask|AbsentValue
+    {
+        return parent::findByKey($key);
     }
 }

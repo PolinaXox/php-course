@@ -2,73 +2,75 @@
 
 namespace App\DataSourceLayer\DAO;
 
+use App\DataSourceLayer\DAO\Abstraction\AbstractDAO;
 use App\DataSourceLayer\DataMapper\UserMapper as UserMapper;
-use App\DataSourceLayer\ServiceDB\FileService as FileService;
+use App\DomainLayer\Entity\Abstraction\DomainObject;
 use App\DomainLayer\Entity\User as User;
 use App\DomainLayer\Exception\AppException as AppException;
-use App\DomainLayer\Exception\AppExceptionsList as AppExceptionsList;
+use App\DomainLayer\Exception\AppExceptionsEnum as AppExceptionsEnum;
 use App\PresentationLayer\InputValidator\AbsentValue as AbsentValue;
+use Override as Override;
 
-class UserDAO
+class UserDAO extends AbstractDAO
 {
-    private string $filePath = __DIR__ . '/../../../FileDB/registered_users.json';
-    private array $users;
+    private string $filePathValue = __DIR__ . '/../../../FileDB/registered_users.json';
 
-    /**
-     * @throws AppException
-     */
-    public function __construct()
-    {
-        new FileService()->ensureFileExists($this->filePath);
-        $this->users = json_decode(file_get_contents($this->filePath), true) ?? [];
-    }
-
-    /**
-     * @param User $user
-     * @return bool
-     */
-    public function save(User $user): bool
-    {
-        $key = $user->login; // ?????????????????
-        $this->users[$key] = new UserMapper()->mapToDatabaseRecord($user);
-
-        return $this->saveChangesToDB();
-    }
-
-    /**
-     * @return bool
-     */
-    private function saveChangesToDB(): bool
-    {
-        return file_put_contents(
-            $this->filePath,
-            json_encode($this->users, JSON_PRETTY_PRINT | JSON_NUMERIC_CHECK)
-        );
-    }
-
-    /**
-     * @param string $login
-     * @return void
-     * @throws AppException
-     */
-    public function ensureUserLoginIsUnique(string $login): void
-    {
-        if ($this->findByLogin($login) instanceof AbsentValue) {
-            return;
-        }
-
-        throw AppException::fromEnum(AppExceptionsList::LoginIsNotUnique);
-    }
+    protected string $filePath { #[Override] get => $this->filePathValue; }
 
     /**
      * @param string $login
      * @return User|AbsentValue
-     * @throws AppException
      */
     public function findByLogin(string $login): User|AbsentValue
     {
-        return array_key_exists($login, $this->users) ?
-            new UserMapper()->mapToEntity($this->users[$login]) :
-            AbsentValue::instance();
+        return $this->findByKey($login);
     }
+
+    /**
+     * @param DomainObject $entity
+     * @return string
+     * @throws AppException
+     */
+    #[Override]
+    protected function extractKey(DomainObject $entity) : string
+    {
+        if($entity instanceof User) {
+            return $entity->login;
+        }
+
+        throw AppException::fromEnum(
+            AppExceptionsEnum::InvalidDataType,
+            ['expected type'=>'User', 'given' => get_class($entity)]
+        );
+    }
+
+    /**
+     * @param DomainObject $entity
+     * @return array
+     * @throws AppException
+     */
+    #[Override]
+    protected function mapToDataBaseRecord(DomainObject $entity): array
+    {
+        if($entity instanceof User) {
+            return new UserMapper()->mapToDatabaseRecord($entity);
+        }
+
+        throw AppException::fromEnum(
+            AppExceptionsEnum::InvalidDataType,
+            ['expected type'=>'User', 'given' => get_class($entity)]
+        );
+    }
+
+    /**
+     * @param array $databaseRecord
+     * @return User
+     */
+    #[Override]
+    protected function mapToEntity(array $databaseRecord): User
+    {
+        return new UserMapper()->mapToEntity($databaseRecord);
+    }
+
 }
+

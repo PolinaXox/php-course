@@ -3,35 +3,34 @@
 namespace App\PresentationLayer\EndPoint;
 
 require_once __DIR__ . '/../../../vendor/autoload.php';
-require_once 'cookie_sets.php';
 
-use App\DataSourceLayer\DAO\ToDoTaskDAO as ToDoTaskDAO;
+use App\DomainLayer\BusinessService\ToDoTaskService as ToDoTaskService;
 use App\DomainLayer\Exception\AppException as AppException;
-use App\DomainLayer\Exception\AppExceptionsList as AppExceptionsList;
-use Exception as Exception;
+use App\PresentationLayer\Request\RequestPreprocessor as RequestPreprocessor;
+use App\PresentationLayer\Response\Response as Response;
+use App\PresentationLayer\Utils\SessionConfigurator as SessionConfigurator;
+use Throwable;
+
 
 define('THIS_SCRIPT_METHOD', 'GET');
 
-if ($_SERVER['REQUEST_METHOD'] !== THIS_SCRIPT_METHOD) {
-    exit;
-}
-
 try {
 
+    // middleware
+    RequestPreprocessor::requireMethod(THIS_SCRIPT_METHOD);
+
+    SessionConfigurator::configureCookies();
     session_start();
+    RequestPreprocessor::requireActiveSession();
 
-    if (!isset($_SESSION['userFile'])) {
-        throw AppException::fromEnum(AppExceptionsList::SessionNotInitialized);
-    }
+    // domain level
+    $allTasks = new ToDoTaskService($_SESSION['userFile'])->getAll();
 
-    // to front
-    header('Content-Type: application/json', false);
-    echo new ToDoTaskDAO($_SESSION['userFile'])->getAllTasksForFront();
+    // presentation level
+    Response::success(['items' => array_values($allTasks)])->send();
 
 } catch (AppException $ex) {
-    $ex->sendResponseToFront();
-    exit;
-} catch (Exception) {
-    http_response_code(500);
-    exit;
+    Response::fromException($ex)->send();
+} catch (Throwable $t) {
+    Response::fromThrowable($t)->send();
 }

@@ -24,11 +24,11 @@ class AppException extends Exception
     }
 
     /**
-     * @param AppExceptionsList $ex
+     * @param AppExceptionsEnum $ex
      * @param array $details
      * @return self
      */
-    public static function fromEnum(AppExceptionsList $ex, array $details=[]): self {
+    public static function fromEnum(AppExceptionsEnum $ex, array $details=[]): self {
          return  new self(
              httpStatusCode: $ex->getHttpStatusCode(),
              httpStatusMessage: $ex->getHttpStatusMessage(),
@@ -36,22 +36,5 @@ class AppException extends Exception
              backDevMessage: $ex->getBackDevMessage($details),
              frontDevMessage: $ex->getFrontDevMessage($details),
          );
-    }
-
-    /**
-     * @return void
-     */
-    // AppExceptionHandler ??????????????????????????
-    // ++
-    public function sendResponseToFront() : void
-    {
-        $messages = [
-            'userMessage' => $this->userMessage,
-            'frontDevMessage' => $this->frontDevMessage
-        ];
-
-        header('Content-Type: application/json', false);
-        http_response_code($this->getCode());
-        echo json_encode($messages);
     }
 }

@@ -3,24 +3,29 @@
 namespace App\DomainLayer\BusinessService;
 
 use App\DataSourceLayer\DAO\UserDAO as UserDAO;
-use App\DomainLayer\BusinessService\ToDoListCreationService as ToDoListCreationService;
+use App\DomainLayer\BusinessService\ToDoListService as ToDoListService;
 use App\DomainLayer\Entity\User as User;
 use App\DomainLayer\Exception\AppException as AppException;
-use App\DomainLayer\Exception\AppExceptionsList as AppExceptionsList;
+use App\DomainLayer\Exception\AppExceptionsEnum as AppExceptionsEnum;
 use App\PresentationLayer\DataTransferObject\UserDTO as UserDTO;
-use App\PresentationLayer\InputValidator\AbsentValue as AbsentValue;
 
 class UserAuthService
 {
     /**
-     * @param User $user
-     * @return void
+     * @param UserDTO $dto
+     * @return User
      * @throws AppException
      */
-    public function register(User $user): void
+    public function register(UserDTO $dto): User
     {
-        new UserDAO()->save($user);
-        new ToDoListCreationService()->create($user);
+        // збереження нового користувача в БД
+        $user = User::createNewUser($dto);
+        new UserDAO()->create($user);
+
+        // створення ЗАПИСУ(!!!) о ТуДуЛисті користувача
+        new ToDoListService()->createRecord($user);
+
+        return $user;
     }
 
     /**
@@ -28,25 +33,12 @@ class UserAuthService
      * @return User
      * @throws AppException
      */
-    public function getAuthenticatedUser(UserDTO $userDTO): User
+    public function authenticate(UserDTO $userDTO): User
     {
-        $user = new UserDAO()->findByLogin($userDTO->login);                // mb AbsentValue
-        $this->ensureUserIsExist($user);                                    // ex if $user = AbsentValue
+        $user = new UserDAO()->findByLogin($userDTO->login);
         $this->ensurePasswordMatched($user->password, $userDTO->password);  // ex if mismatched
 
         return $user;
-    }
-
-    /**
-     * @param User|AbsentValue $user
-     * @return void
-     * @throws AppException
-     */
-    private function ensureUserIsExist(User|AbsentValue $user): void
-    {
-        if ($user instanceof AbsentValue) {
-            throw AppException::fromEnum(AppExceptionsList::UnknownUser);
-        }
     }
 
     /**
@@ -58,7 +50,7 @@ class UserAuthService
     private function ensurePasswordMatched(string $passwordFromDB, string $inputPassword): void
     {
         if (!password_verify($inputPassword, $passwordFromDB)) {
-            throw AppException::fromEnum(AppExceptionsList::PasswordMismatch);
+            throw AppException::fromEnum(AppExceptionsEnum::PasswordMismatch);
         }
     }
 

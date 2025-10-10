@@ -3,7 +3,7 @@
 namespace App\DataSourceLayer\ServiceDB;
 
 use App\DomainLayer\Exception\AppException as AppException;
-use App\DomainLayer\Exception\AppExceptionsList as AppExceptionsList;
+use App\DomainLayer\Exception\AppExceptionsEnum as AppExceptionsEnum;
 
 class FileService
 {
@@ -15,7 +15,7 @@ class FileService
     public function ensureFileExists(string $filePath): void
     {
         if (!file_exists($filePath)) {
-            throw AppException::fromEnum(AppExceptionsList::FileNotExist, ['filePath' => $filePath]);
+            throw AppException::fromEnum(AppExceptionsEnum::FileNotExists, ['filePath' => $filePath]);
         }
     }
 }
